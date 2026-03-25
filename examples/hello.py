@@ -37,6 +37,7 @@ def show_about(sh):
             "Three menu items.  Five lines of layout.",
             "That's all it takes.",
         ],
+        width=50,
     ).show(parent_shell=sh)
 
 

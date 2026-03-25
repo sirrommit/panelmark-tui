@@ -363,6 +363,20 @@ def _sort_tasks(sh):
     sh.update("status", ("info", f"Sorted by {choice}."))
 
 
+def _quit(sh):
+    """Show a confirmation dialog; if confirmed, signal the shell to exit."""
+    ok = Confirm(
+        title         = "Quit",
+        message_lines = ["Exit Task Manager?"],
+        buttons       = {"Quit": True, "Cancel": False},
+    ).show(parent_shell=sh)
+    if ok:
+        # Setting _wants_exit=True here is read by signal_return() after this
+        # callback returns, causing the shell event loop to exit cleanly.
+        sh._interactions["actions"]._wants_exit = True
+        sh._interactions["actions"]._exit_value = None
+
+
 def _export_tasks(sh):
     """Pick an output file with FilePicker, then write tasks with a Progress bar."""
     path = FilePicker(
@@ -429,8 +443,8 @@ LAYOUT = """
 def main():
     sh = Shell(LAYOUT)
 
-    # Action bar.  A plain non-callable value ("quit") exits the shell loop.
-    # Confirmed quit is handled by passing the sentinel through on_change.
+    # Action bar.  All items are callables.  _quit() sets _wants_exit after
+    # the user confirms, which signal_return() reads once the callback returns.
     sh.assign("actions", MenuFunction({
         "Add":    _add_task,
         "Edit":   _edit_task,
@@ -438,25 +452,8 @@ def main():
         "Filter": _filter_tasks,
         "Sort":   _sort_tasks,
         "Export": _export_tasks,
-        "Quit":   "quit",           # non-callable → signal_return exits loop
+        "Quit":   _quit,
     }))
-
-    # Intercept the "Quit" selection to show a confirmation dialog first.
-    def _on_actions_change(region, value):
-        if value != "Quit":
-            return
-        # Cancel the pending exit, show Confirm, then re-trigger if needed.
-        actions = sh._interactions["actions"]
-        actions._wants_exit = False
-        ok = Confirm(
-            title         = "Quit",
-            message_lines = ["Exit Task Manager?"],
-            buttons       = {"Quit": True, "Cancel": False},
-        ).show(parent_shell=sh)
-        if ok:
-            actions._wants_exit = True   # let signal_return() exit the loop
-
-    sh.on_change("actions", _on_actions_change)
 
     # Task list.
     _rebuild_task_menu(sh)
