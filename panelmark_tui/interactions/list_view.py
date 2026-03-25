@@ -1,4 +1,6 @@
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
+from .scrollable import _Scrollable
 
 
 def _to_roman(n: int, upper: bool = True) -> str:
@@ -32,8 +34,26 @@ def _get_bullet(bullet: str, index: int) -> str:
     return bullet
 
 
-class ListView(Interaction):
-    """Display-only list of items with optional bullet styles."""
+class ListView(_Scrollable, Interaction):
+    """Scrollable display-only list with optional bullet styles.
+
+    Not focusable by default so that display-only regions are skipped by
+    the shell's focus cycle.  Set ``is_focusable = True`` on a subclass
+    to enable keyboard scrolling.
+
+    Scroll state (``_scroll_offset``) can always be driven
+    programmatically via ``_scroll_by`` / ``_clamp_scroll_to`` from the
+    ``_Scrollable`` mixin regardless of focusability.
+
+    Navigation keys (when focusable)
+    ---------------------------------
+    ``↑`` / ``k``          scroll up one row
+    ``↓`` / ``j``          scroll down one row
+    ``Page Up``            scroll up one viewport
+    ``Page Down``          scroll down one viewport
+    ``Home``               jump to top
+    ``End``                jump to bottom
+    """
 
     is_focusable = False
 
@@ -41,23 +61,40 @@ class ListView(Interaction):
         self._items = list(items)
         self._bullet = bullet
 
-    def render(self, region, term, focused: bool = False) -> None:
-        for i, item in enumerate(self._items):
-            row = region.row + i
-            if row >= region.row + region.height:
-                break
-            bullet = _get_bullet(self._bullet, i)
-            line = f'{bullet} {item}'
-            display = line[:region.width].ljust(region.width)
-            print(term.move(row, region.col) + display, end='', flush=False)
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        self._last_height = context.height
+        cmds: list[DrawCommand] = []
 
-        # Clear remaining lines
-        for i in range(len(self._items), region.height):
-            row = region.row + i
-            print(term.move(row, region.col) + ' ' * region.width, end='', flush=False)
+        visible = self._items[self._scroll_offset:self._scroll_offset + context.height]
+        for i, item in enumerate(visible):
+            abs_i = self._scroll_offset + i
+            bullet = _get_bullet(self._bullet, abs_i)
+            line = f'{bullet} {item}'
+            display = line[:context.width].ljust(context.width)
+            cmds.append(WriteCmd(row=i, col=0, text=display))
+
+        trailing = context.height - len(visible)
+        if trailing > 0:
+            cmds.append(FillCmd(
+                row=len(visible), col=0,
+                width=context.width, height=trailing,
+            ))
+        return cmds
 
     def handle_key(self, key) -> tuple:
-        # Display only, no key handling
+        n = len(self._items)
+        if key in ('KEY_UP', 'k'):
+            self._scroll_by(-1, n)
+        elif key in ('KEY_DOWN', 'j'):
+            self._scroll_by(1, n)
+        elif key == 'KEY_PPAGE':
+            self._scroll_by(-max(1, self._last_height - 1), n)
+        elif key == 'KEY_NPAGE':
+            self._scroll_by(max(1, self._last_height - 1), n)
+        elif key == 'KEY_HOME':
+            self._scroll_offset = 0
+        elif key == 'KEY_END':
+            self._scroll_by(n, n)
         return False, self.get_value()
 
     def get_value(self) -> list:
@@ -65,10 +102,23 @@ class ListView(Interaction):
 
     def set_value(self, value) -> None:
         self._items = list(value)
+        # Clamp in case the list shrank
+        self._scroll_by(0, len(self._items))
 
 
-class SubList(Interaction):
-    """Display-only list with support for nested sublists."""
+class SubList(_Scrollable, Interaction):
+    """Scrollable display-only list with support for nested sublists.
+
+    Items can be plain strings or nested lists for sub-groups::
+
+        SubList(['top', ['child1', 'child2'], 'bottom'])
+
+    Sub-group items are indented by two spaces per nesting level.
+
+    Scroll offset is supported for programmatic control.  The interaction
+    is not focusable by default; make it focusable in a subclass if keyboard
+    scrolling is needed.
+    """
 
     is_focusable = False
 
@@ -76,32 +126,42 @@ class SubList(Interaction):
         self._items = items
         self._bullet = bullet
 
-    def _render_items(self, items: list, region, term, start_row: int, indent: int, max_row: int) -> int:
-        """Recursively render items. Returns the next row to render to."""
-        row = start_row
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _flatten_items(self, items: list, indent: int = 0) -> list[str]:
+        """Recursively flatten *items* into a list of display strings."""
+        lines: list[str] = []
         i = 0
         for item in items:
-            if row >= max_row:
-                break
             if isinstance(item, list):
-                row = self._render_items(item, region, term, row, indent + 2, max_row)
+                lines.extend(self._flatten_items(item, indent + 2))
             else:
                 bullet = _get_bullet(self._bullet, i)
-                prefix = ' ' * indent
-                line = f'{prefix}{bullet} {item}'
-                display = line[:region.width].ljust(region.width)
-                print(term.move(row, region.col) + display, end='', flush=False)
-                row += 1
+                lines.append(' ' * indent + bullet + ' ' + str(item))
                 i += 1
-        return row
+        return lines
 
-    def render(self, region, term, focused: bool = False) -> None:
-        max_row = region.row + region.height
-        next_row = self._render_items(self._items, region, term, region.row, 0, max_row)
+    # ------------------------------------------------------------------
+    # Interaction protocol
+    # ------------------------------------------------------------------
 
-        # Clear remaining lines
-        for row in range(next_row, max_row):
-            print(term.move(row, region.col) + ' ' * region.width, end='', flush=False)
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        self._last_height = context.height
+        lines = self._flatten_items(self._items)
+
+        visible = lines[self._scroll_offset:self._scroll_offset + context.height]
+        cmds: list[DrawCommand] = []
+        for i, line in enumerate(visible):
+            cmds.append(WriteCmd(row=i, col=0,
+                                 text=line[:context.width].ljust(context.width)))
+
+        trailing = context.height - len(visible)
+        if trailing > 0:
+            cmds.append(FillCmd(row=len(visible), col=0,
+                                width=context.width, height=trailing))
+        return cmds
 
     def handle_key(self, key) -> tuple:
         return False, self.get_value()

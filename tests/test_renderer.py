@@ -56,26 +56,31 @@ class TestRendererDrawBorder:
 
 class TestRendererRenderRegion:
     def test_render_region_calls_interaction_render(self, renderer, term):
+        from panelmark.draw import RenderContext, WriteCmd
         region = Region(name='test', row=0, col=0, width=20, height=5)
         called = []
 
         class MockInteraction:
-            def render(self, r, t, focused=False):
-                called.append((r, t, focused))
+            def render(self, context, focused=False):
+                called.append((context, focused))
+                return [WriteCmd(row=0, col=0, text=' ' * context.width)]
 
-        renderer.render_region(region, MockInteraction(), term, focused=True)
+        renderer.render_region(region, MockInteraction(), focused=True)
         assert len(called) == 1
-        assert called[0][2] is True
+        assert isinstance(called[0][0], RenderContext)
+        assert called[0][1] is True
 
     def test_render_region_unfocused(self, renderer, term):
+        from panelmark.draw import RenderContext, WriteCmd
         region = Region(name='test', row=0, col=0, width=20, height=5)
         called = []
 
         class MockInteraction:
-            def render(self, r, t, focused=False):
+            def render(self, context, focused=False):
                 called.append(focused)
+                return []
 
-        renderer.render_region(region, MockInteraction(), term, focused=False)
+        renderer.render_region(region, MockInteraction(), focused=False)
         assert called[0] is False
 
 

@@ -1,29 +1,15 @@
 import pytest
-import io
-import sys
 from panelmark_tui.testing import MockTerminal, make_key
 from panelmark_tui.interactions import (
     MenuFunction, MenuReturn, MenuHybrid,
     TextBox, ListView, SubList, CheckBox, Function, FormInput
 )
-from panelmark.layout import Region
+from panelmark.draw import RenderContext, WriteCmd, FillCmd, CursorCmd
 
 
-@pytest.fixture
-def term():
-    return MockTerminal(width=80, height=24)
-
-
-@pytest.fixture
-def region():
-    return Region(name='test', row=0, col=0, width=40, height=10)
-
-
-@pytest.fixture
-def capture(monkeypatch):
-    buf = io.StringIO()
-    monkeypatch.setattr(sys, 'stdout', buf)
-    return buf
+def ctx(width=40, height=10):
+    return RenderContext(width=width, height=height,
+                        capabilities=frozenset({'color', 'cursor'}))
 
 
 class TestMenuReturn:
@@ -80,9 +66,24 @@ class TestMenuReturn:
         m.set_value('C')
         assert m.get_value() == 'C'
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         m = MenuReturn({'Option A': 'a', 'Option B': 'b'})
-        m.render(region, term, focused=True)
+        cmds = m.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_active_row_reversed_when_focused(self):
+        m = MenuReturn({'A': 1, 'B': 2})
+        cmds = m.render(ctx(), focused=True)
+        active = next(c for c in cmds if isinstance(c, WriteCmd) and c.row == 0)
+        assert active.style == {'reverse': True}
+
+    def test_render_active_row_marker_when_unfocused(self):
+        m = MenuReturn({'A': 1, 'B': 2})
+        cmds = m.render(ctx(), focused=False)
+        active = next(c for c in cmds if isinstance(c, WriteCmd) and c.row == 0)
+        assert '>' in active.text
+        assert active.style is None
 
 
 class TestMenuFunction:
@@ -93,7 +94,6 @@ class TestMenuFunction:
     def test_navigate_down(self):
         m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
         m.handle_key('KEY_DOWN')
-        # Active index should be 1
 
     def test_enter_calls_function(self):
         called = []
@@ -107,9 +107,11 @@ class TestMenuFunction:
         m.handle_key('KEY_ENTER')
         assert m.get_value() == 'Action'
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         m = MenuFunction({'Option': lambda s: None})
-        m.render(region, term, focused=True)
+        cmds = m.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
 
 
 class TestMenuHybrid:
@@ -130,9 +132,11 @@ class TestMenuHybrid:
         assert should_exit is True
         assert rv == 42
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         m = MenuHybrid({'A': lambda s: None, 'B': 99})
-        m.render(region, term, focused=True)
+        cmds = m.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
 
 
 class TestTextBox:
@@ -172,9 +176,27 @@ class TestTextBox:
         t.handle_key('KEY_UP')
         assert t.get_value() == ''
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         t = TextBox(initial='some text')
-        t.render(region, term, focused=True)
+        cmds = t.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_focused_has_cursor_cmd(self):
+        t = TextBox(initial='hi')
+        cmds = t.render(ctx(), focused=True)
+        assert any(isinstance(c, CursorCmd) for c in cmds)
+
+    def test_render_unfocused_no_cursor_cmd(self):
+        t = TextBox(initial='hi')
+        cmds = t.render(ctx(), focused=False)
+        assert not any(isinstance(c, CursorCmd) for c in cmds)
+
+    def test_render_text_appears_in_commands(self):
+        t = TextBox(initial='hello')
+        cmds = t.render(ctx(width=20, height=3), focused=False)
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
+        assert 'hello' in text
 
 
 class TestListView:
@@ -192,9 +214,23 @@ class TestListView:
         lv.set_value(['x', 'y', 'z'])
         assert lv.get_value() == ['x', 'y', 'z']
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         lv = ListView(['item 1', 'item 2'])
-        lv.render(region, term)
+        cmds = lv.render(ctx())
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_items_appear_in_commands(self):
+        lv = ListView(['alpha', 'beta'])
+        cmds = lv.render(ctx(width=20, height=5))
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
+        assert 'alpha' in text
+        assert 'beta' in text
+
+    def test_render_trailing_fill_when_short(self):
+        lv = ListView(['only one'])
+        cmds = lv.render(ctx(width=20, height=5))
+        assert any(isinstance(c, FillCmd) for c in cmds)
 
     def test_bullet_numeric(self):
         lv = ListView(['a', 'b', 'c'], bullet='1')
@@ -210,9 +246,18 @@ class TestSubList:
         sl = SubList(['top', ['sub1', 'sub2'], 'end'])
         assert sl.get_value() == ['top', ['sub1', 'sub2'], 'end']
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         sl = SubList(['item', ['subitem'], 'other'])
-        sl.render(region, term)
+        cmds = sl.render(ctx())
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_nested_items_appear(self):
+        sl = SubList(['top', ['nested']])
+        cmds = sl.render(ctx(width=30, height=10))
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
+        assert 'top' in text
+        assert 'nested' in text
 
     def test_handle_key_no_change(self):
         sl = SubList(['a'])
@@ -260,37 +305,59 @@ class TestCheckBox:
         cb.set_value({'a': True})
         assert cb.get_value() == {'a': True}
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         cb = CheckBox({'opt1': True, 'opt2': False})
-        cb.render(region, term, focused=True)
+        cmds = cb.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_checked_items_appear(self):
+        cb = CheckBox({'yes': True, 'no': False})
+        cmds = cb.render(ctx(width=30, height=5), focused=False)
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
+        assert '[X]' in text
+        assert '[ ]' in text
 
 
 class TestFunction:
-    def test_render_calls_handler(self, region, term, capture):
+    def test_render_calls_handler(self):
         calls = []
-        def handler(shell, reg, key):
-            calls.append((shell, reg, key))
+        def handler(shell, context, key):
+            calls.append((shell, context, key))
+            return []
         f = Function(handler)
-        f.render(region, term)
+        c = ctx()
+        f.render(c)
         assert len(calls) == 1
+        assert calls[0][1] is c
         assert calls[0][2] is None  # key=None on render
 
-    def test_handle_key_calls_handler(self, region, term, capture):
+    def test_render_returns_handler_commands(self):
+        cmds_out = [WriteCmd(row=0, col=0, text='hi')]
+        f = Function(lambda s, c, k: cmds_out)
+        result = f.render(ctx())
+        assert result == cmds_out
+
+    def test_render_none_handler_returns_empty(self):
+        f = Function(lambda s, c, k: None)
+        result = f.render(ctx())
+        assert result == []
+
+    def test_handle_key_calls_handler(self):
         calls = []
-        def handler(shell, reg, key):
+        def handler(shell, context, key):
             calls.append(key)
         f = Function(handler)
-        f._region = region
-        key = 'x'
-        f.handle_key(key)
-        assert key in calls
+        f._context = ctx()
+        f.handle_key('x')
+        assert 'x' in calls
 
     def test_initial_value_none(self):
-        f = Function(lambda s, r, k: None)
+        f = Function(lambda s, c, k: None)
         assert f.get_value() is None
 
     def test_set_value(self):
-        f = Function(lambda s, r, k: None)
+        f = Function(lambda s, c, k: None)
         f.set_value(42)
         assert f.get_value() == 42
 
@@ -357,16 +424,12 @@ class TestFormInput:
         form.handle_key(' ')
         assert form.get_value()['flag'] is True
 
-    # --- bool default parsing ---
-
     def test_bool_default_ambiguous_string_raises(self):
-        """Arbitrary truthy strings like '1', 'yes', 'on' must be rejected."""
         for bad in ('1', '0', 'yes', 'no', 'on', 'off', ''):
             with pytest.raises(ValueError):
                 FormInput({'f': {'type': 'bool', 'descriptor': 'F', 'default': bad}})
 
     def test_bool_default_false_capital_accepted(self):
-        """'False' (capital F) is accepted case-insensitively and maps to False."""
         form = FormInput({'f': {'type': 'bool', 'descriptor': 'F', 'default': 'False'}})
         assert form.get_value()['f'] is False
 
@@ -403,14 +466,12 @@ class TestFormInput:
             'b': {'type': 'str', 'descriptor': 'B'},
         })
         form.handle_key('KEY_DOWN')
-        # Active should be at index 1 now
         assert form._active_index == 1
 
     def test_submit_valid_form(self):
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})
         form.handle_key('h')
         form.handle_key('i')
-        # Navigate to submit
         form.handle_key('KEY_DOWN')
         form.handle_key('KEY_ENTER')
         should_exit, rv = form.signal_return()
@@ -419,20 +480,26 @@ class TestFormInput:
 
     def test_submit_required_field_empty(self):
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name', 'required': True}})
-        # Navigate to submit
         form.handle_key('KEY_DOWN')
         form.handle_key('KEY_ENTER')
         should_exit, _ = form.signal_return()
         assert should_exit is False
-        # Error should be set
         assert form._field_errors.get('name') is not None
 
-    def test_render_does_not_crash(self, term, region, capture):
+    def test_render_returns_commands(self):
         form = FormInput({
             'name': {'type': 'str', 'descriptor': 'Name'},
             'active': {'type': 'bool', 'descriptor': 'Active'},
         })
-        form.render(region, term, focused=True)
+        cmds = form.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_active_row_reversed(self):
+        form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})
+        cmds = form.render(ctx(), focused=True)
+        reversed_cmds = [c for c in cmds if isinstance(c, WriteCmd) and c.style == {'reverse': True}]
+        assert len(reversed_cmds) >= 1
 
     def test_set_value(self):
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})

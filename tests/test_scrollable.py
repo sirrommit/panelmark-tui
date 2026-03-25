@@ -1,21 +1,16 @@
-"""Tests for _ScrollableList scroll behaviour in menu and checkbox interactions."""
+"""Tests for _ScrollableList scroll behaviour in menu and checkbox interactions,
+and for ListView / SubList display-only scrolling."""
 
-import io
-import sys
 import pytest
-from panelmark_tui.testing import MockTerminal, make_key
+from panelmark_tui.testing import make_key
 from panelmark_tui.interactions import MenuFunction, MenuReturn, MenuHybrid, CheckBox
-from panelmark.layout import Region
+from panelmark_tui.interactions.list_view import ListView, SubList
+from panelmark.draw import RenderContext, WriteCmd, FillCmd
 
 
-@pytest.fixture
-def term():
-    return MockTerminal(width=80, height=24)
-
-
-def small_region(height):
-    """Region that shows only *height* rows at a time."""
-    return Region(name='test', row=0, col=0, width=40, height=height)
+def ctx(height):
+    """RenderContext that shows only *height* rows at a time."""
+    return RenderContext(width=40, height=height)
 
 
 def make_labels(n):
@@ -28,14 +23,8 @@ def make_labels(n):
 # ---------------------------------------------------------------------------
 
 def prime(interaction, height):
-    """Render into a small region so _last_height is stored."""
-    buf = io.StringIO()
-    region = small_region(height)
-    old, sys.stdout = sys.stdout, buf
-    try:
-        interaction.render(region, MockTerminal(width=80, height=24), focused=False)
-    finally:
-        sys.stdout = old
+    """Render into a small context so _last_height is stored."""
+    interaction.render(ctx(height), focused=False)
     return interaction
 
 
@@ -167,36 +156,133 @@ class TestCheckBoxScroll:
 
 
 # ---------------------------------------------------------------------------
-# Render output — active item is inside the rendered lines
+# Render output — active item is inside the rendered commands
 # ---------------------------------------------------------------------------
 
 class TestScrollRender:
     def test_active_item_rendered_after_scroll(self):
         m = MenuReturn(make_labels(10))
-        region = small_region(3)
-        buf = io.StringIO()
-        # Navigate to item 5
         prime(m, 3)
         for _ in range(5):
             m.handle_key('KEY_DOWN')
-        # Render and check that 'Item 5' appears in output
-        old, sys.stdout = sys.stdout, buf
-        try:
-            m.render(region, MockTerminal(width=80, height=24), focused=True)
-        finally:
-            sys.stdout = old
-        assert 'Item 5' in buf.getvalue()
+        cmds = m.render(ctx(3), focused=True)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert any('Item 5' in t for t in texts)
 
     def test_first_item_not_rendered_after_scroll(self):
         m = MenuReturn(make_labels(10))
-        region = small_region(3)
-        buf = io.StringIO()
         prime(m, 3)
         for _ in range(5):
             m.handle_key('KEY_DOWN')
-        old, sys.stdout = sys.stdout, buf
-        try:
-            m.render(region, MockTerminal(width=80, height=24), focused=False)
-        finally:
-            sys.stdout = old
-        assert 'Item 0' not in buf.getvalue()
+        cmds = m.render(ctx(3), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert not any('Item 0' in t for t in texts)
+
+
+# ---------------------------------------------------------------------------
+# ListView scroll behaviour
+# ---------------------------------------------------------------------------
+
+class TestListViewScroll:
+    def test_not_focusable_by_default(self):
+        lv = ListView(['a', 'b', 'c'])
+        assert lv.is_focusable is False
+
+    def test_scroll_offset_zero_initially(self):
+        lv = ListView(list(range(20)))
+        assert lv._scroll_offset == 0
+
+    def test_render_shows_first_n_items(self):
+        lv = ListView(['alpha', 'beta', 'gamma', 'delta'])
+        cmds = lv.render(ctx(2), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert any('alpha' in t for t in texts)
+        assert any('beta' in t  for t in texts)
+        assert not any('gamma' in t for t in texts)
+
+    def test_scroll_by_shifts_visible_window(self):
+        lv = ListView(list(f'Item {i}' for i in range(10)))
+        prime(lv, 3)
+        lv._scroll_by(3, 10)
+        cmds = lv.render(ctx(3), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert any('Item 3' in t for t in texts)
+        assert not any('Item 0' in t for t in texts)
+
+    def test_fill_cmd_added_for_short_list(self):
+        lv = ListView(['only'])
+        cmds = lv.render(ctx(5), focused=False)
+        assert any(isinstance(c, FillCmd) for c in cmds)
+
+    def test_handle_key_up_scrolls(self):
+        lv = ListView(list(f'R{i}' for i in range(10)))
+        prime(lv, 3)
+        lv._scroll_by(5, 10)
+        lv.handle_key('KEY_UP')
+        assert lv._scroll_offset == 4
+
+    def test_handle_key_down_scrolls(self):
+        lv = ListView(list(f'R{i}' for i in range(10)))
+        prime(lv, 3)
+        lv.handle_key('KEY_DOWN')
+        assert lv._scroll_offset == 1
+
+    def test_handle_key_home_resets_offset(self):
+        lv = ListView(list(f'R{i}' for i in range(10)))
+        prime(lv, 3)
+        lv._scroll_by(5, 10)
+        lv.handle_key('KEY_HOME')
+        assert lv._scroll_offset == 0
+
+    def test_handle_key_end_jumps_to_bottom(self):
+        lv = ListView(list(f'R{i}' for i in range(10)))
+        prime(lv, 3)
+        lv.handle_key('KEY_END')
+        assert lv._scroll_offset == 7  # 10 items - 3 height
+
+    def test_handle_key_returns_false_and_items(self):
+        items = ['x', 'y', 'z']
+        lv = ListView(items)
+        changed, value = lv.handle_key('KEY_DOWN')
+        assert changed is False
+        assert value == items
+
+    def test_set_value_clamps_offset(self):
+        lv = ListView(list(range(20)))
+        prime(lv, 5)
+        lv._scroll_by(15, 20)   # offset = 15
+        lv.set_value(list(range(3)))  # shrink list to 3 items
+        assert lv._scroll_offset == 0
+
+
+# ---------------------------------------------------------------------------
+# SubList scroll behaviour
+# ---------------------------------------------------------------------------
+
+class TestSubListScroll:
+    def test_not_focusable(self):
+        sl = SubList(['a', 'b'])
+        assert sl.is_focusable is False
+
+    def test_flat_items_rendered(self):
+        sl = SubList(['foo', 'bar', 'baz'])
+        cmds = sl.render(ctx(3), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert any('foo' in t for t in texts)
+        assert any('bar' in t for t in texts)
+
+    def test_nested_items_indented(self):
+        sl = SubList(['top', ['child1', 'child2'], 'bottom'])
+        cmds = sl.render(ctx(10), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        child_lines = [t for t in texts if 'child' in t]
+        assert all(t.startswith('  ') for t in child_lines)
+
+    def test_scroll_hides_top_items(self):
+        sl = SubList(list(f'Item {i}' for i in range(10)))
+        prime(sl, 3)
+        sl._scroll_by(3, 10)
+        cmds = sl.render(ctx(3), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert not any('Item 0' in t for t in texts)
+        assert any('Item 3' in t for t in texts)

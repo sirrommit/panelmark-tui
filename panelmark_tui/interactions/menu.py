@@ -1,3 +1,4 @@
+from panelmark.draw import DrawCommand, RenderContext
 from .scrollable import _ScrollableList
 
 
@@ -15,11 +16,11 @@ class MenuFunction(_ScrollableList):
         self._last_activated = None
         self._shell = None
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         viewport = self._labels[
-            self._scroll_offset: self._scroll_offset + region.height
+            self._scroll_offset: self._scroll_offset + context.height
         ]
-        self._render_rows(viewport, region, term, focused)
+        return self._build_rows(viewport, context, focused)
 
     def handle_key(self, key) -> tuple:
         if key.startswith("KEY_"):
@@ -82,11 +83,11 @@ class MenuReturn(_ScrollableList):
         self._wants_exit = False
         self._exit_value = None
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         viewport = self._labels[
-            self._scroll_offset: self._scroll_offset + region.height
+            self._scroll_offset: self._scroll_offset + context.height
         ]
-        self._render_rows(viewport, region, term, focused)
+        return self._build_rows(viewport, context, focused)
 
     def handle_key(self, key) -> tuple:
         self._wants_exit = False
@@ -154,11 +155,11 @@ class MenuHybrid(_ScrollableList):
         self._last_activated = None
         self._shell = None
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         viewport = self._labels[
-            self._scroll_offset: self._scroll_offset + region.height
+            self._scroll_offset: self._scroll_offset + context.height
         ]
-        self._render_rows(viewport, region, term, focused)
+        return self._build_rows(viewport, context, focused)
 
     def handle_key(self, key) -> tuple:
         self._wants_exit = False
