@@ -1,37 +1,47 @@
 """_ScrollableList — shared base for vertically scrollable list interactions.
 
 Subclasses inherit:
-  - ``_active_index``  / ``_scroll_offset`` state
+  - ``_active_index``  / ``_scroll_offset`` scroll state
   - ``_clamp_scroll()`` — adjusts offset so the active item is always visible
-  - ``_render_rows()``  — renders the visible viewport slice with focus/active
-                          highlighting and clears trailing rows
+  - ``_build_rows()``  — builds a ``list[DrawCommand]`` for the visible
+                         viewport slice with focus/active highlighting and
+                         trailing-row fill commands
 
 Usage in a subclass render()::
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         viewport = self._labels[self._scroll_offset:
-                                 self._scroll_offset + region.height]
-        self._render_rows(viewport, region, term, focused)
+                                 self._scroll_offset + context.height]
+        return self._build_rows(viewport, context, focused)
 
 Usage after moving _active_index in handle_key()::
 
     self._active_index = max(0, self._active_index - 1)
     self._clamp_scroll()
+
+Future extraction note
+----------------------
+The scroll state block (``_active_index``, ``_scroll_offset``, ``_last_height``,
+``_clamp_scroll``) is intentionally kept separate from ``_build_rows``.  A
+future ``_Scrollable`` base class (Phase 9) will lift exactly that block out,
+allowing display-only scrollable interactions to inherit scroll state without
+inheriting the list-selection machinery.
 """
 
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
 class _ScrollableList(Interaction):
     """Abstract base for list-like interactions that support scroll offset."""
 
+    # ------------------------------------------------------------------
+    # Scroll state  (future _Scrollable base class extracts this block)
+    # ------------------------------------------------------------------
+
     _active_index: int = 0
     _scroll_offset: int = 0
     _last_height: int = 10   # updated on every render call
-
-    # ------------------------------------------------------------------
-    # Scroll helpers
-    # ------------------------------------------------------------------
 
     def _clamp_scroll(self) -> None:
         """Adjust _scroll_offset so _active_index is within the viewport.
@@ -46,7 +56,61 @@ class _ScrollableList(Interaction):
             self._scroll_offset = self._active_index - h + 1
 
     # ------------------------------------------------------------------
-    # Shared render helper
+    # Row building
+    # ------------------------------------------------------------------
+
+    def _build_rows(
+        self,
+        display_lines: list,
+        context: RenderContext,
+        focused: bool,
+        active_marker: bool = True,
+    ) -> list[DrawCommand]:
+        """Return draw commands for *display_lines* (the visible viewport slice).
+
+        Parameters
+        ----------
+        display_lines:
+            Pre-sliced list of strings — one per visible row, starting at
+            ``_scroll_offset``.  Each string is the full display text for
+            that item (e.g. ``'label'`` or ``'[X] label'``).
+        context:
+            Render context supplying region dimensions and capabilities.
+        focused:
+            Whether this interaction has keyboard focus.
+        active_marker:
+            If True (default), the active row gets a ``>`` prefix when the
+            interaction is not focused.  Set to False for interactions
+            (e.g. CheckBox) that only highlight when focused.
+        """
+        self._last_height = context.height
+        cmds: list[DrawCommand] = []
+
+        for screen_i, line in enumerate(display_lines):
+            item_idx = self._scroll_offset + screen_i
+            clipped = line[:context.width].ljust(context.width)
+
+            if item_idx == self._active_index and focused:
+                cmds.append(WriteCmd(row=screen_i, col=0, text=clipped,
+                                     style={'reverse': True}))
+            elif item_idx == self._active_index and active_marker:
+                text = f'> {line}'[:context.width].ljust(context.width)
+                cmds.append(WriteCmd(row=screen_i, col=0, text=text))
+            else:
+                cmds.append(WriteCmd(row=screen_i, col=0, text=clipped))
+
+        # Fill any rows below the rendered items
+        trailing = context.height - len(display_lines)
+        if trailing > 0:
+            cmds.append(FillCmd(
+                row=len(display_lines), col=0,
+                width=context.width, height=trailing,
+            ))
+
+        return cmds
+
+    # ------------------------------------------------------------------
+    # Deprecated — remove once all subclasses use _build_rows
     # ------------------------------------------------------------------
 
     def _render_rows(
@@ -57,25 +121,13 @@ class _ScrollableList(Interaction):
         focused: bool,
         active_marker: bool = True,
     ) -> None:
-        """Render *display_lines* (the visible viewport slice) into *region*.
+        """Deprecated: use ``_build_rows`` and return the command list.
 
-        Parameters
-        ----------
-        display_lines:
-            Pre-sliced list of strings — one per visible row, starting at
-            ``_scroll_offset``.  Each string is the full display text for
-            that item (e.g. ``'label'`` or ``'[X] label'``).
-        region:
-            The Region object describing position and size.
-        term:
-            Blessed Terminal (or mock).
-        focused:
-            Whether this interaction has keyboard focus.
-        active_marker:
-            If True (default), the active row gets a ``>`` prefix when the
-            interaction is not focused.  Set to False for interactions
-            (e.g. CheckBox) that only highlight when focused.
+        Will be removed in Phase 4 once all subclass ``render()`` methods
+        are migrated to the ``(context, focused) -> list[DrawCommand]``
+        signature.
         """
+        import sys
         self._last_height = region.height
 
         for screen_i, line in enumerate(display_lines):
@@ -95,6 +147,5 @@ class _ScrollableList(Interaction):
 
             print(term.move(row, region.col) + text, end='', flush=False)
 
-        # Clear any rows below the rendered items
         for r in range(region.row + len(display_lines), region.row + region.height):
             print(term.move(r, region.col) + ' ' * region.width, end='', flush=False)
