@@ -59,7 +59,7 @@ class Shell(_CoreShell):
             if dirty_name in self._interactions and dirty_name in self._regions:
                 region = self._regions[dirty_name]
                 interaction = self._interactions[dirty_name]
-                renderer.render_region(region, interaction, term,
+                renderer.render_region(region, interaction,
                                        dirty_name == self._focused)
         self._dirty.clear()
         sys.stdout.flush()

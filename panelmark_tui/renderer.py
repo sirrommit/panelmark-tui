@@ -3,6 +3,8 @@ from panelmark.layout import (LayoutModel, Region, BorderRow, HSplit, VSplit,
                                Panel, _declared_width, _declared_height,
                                _num_vsplit_cols, _vsplit_left_width)
 from .style import render_styled, styled_plain_text
+from .executor import TUICommandExecutor
+from .context import build_render_context
 
 # ---------------------------------------------------------------------------
 # Box-drawing character tables
@@ -131,7 +133,7 @@ class Renderer:
             interaction = interactions.get(name)
             focused = (name == focused_name)
             if interaction:
-                self.render_region(region, interaction, term, focused)
+                self.render_region(region, interaction, focused)
             else:
                 self._render_empty_region(region, focused)
 
@@ -206,8 +208,11 @@ class Renderer:
                     col, width, bottom_height,
                     None, left_div, right_div, term_width)
 
-    def render_region(self, region: Region, interaction, term, focused: bool):
-        interaction.render(region, term, focused)
+    def render_region(self, region: Region, interaction, focused: bool):
+        context = build_render_context(region, self._term)
+        commands = interaction.render(context, focused)
+        executor = TUICommandExecutor(self._term)
+        executor.execute(commands, region)
 
     def _render_empty_region(self, region: Region, focused: bool):
         term = self._term

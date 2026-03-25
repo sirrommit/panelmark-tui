@@ -38,6 +38,7 @@ import calendar as _calendar
 
 from panelmark_tui import Shell
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 from panelmark_tui.widgets._utils import _SubmittingMenu
 
 
@@ -102,27 +103,24 @@ class _NavBar(Interaction):
     def __init__(self, state: dict):
         self._state = state  # shared with _CalendarInteraction
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         month_str = self._state["month"].strftime("%B %Y")
 
         # Row 0: month/year label, bold when focused
-        label = month_str.center(region.width)
-        if focused:
-            try:
-                label = term.bold + label + term.normal
-            except Exception:
-                pass
-        print(term.move(region.row, region.col) + label, end="", flush=False)
+        label = month_str.center(context.width)
+        cmds: list[DrawCommand] = [
+            WriteCmd(row=0, col=0, text=label,
+                     style={'bold': True} if focused else None)
+        ]
 
         # Row 1: < Prev on left, Next > on right (only if 2+ rows allocated)
-        if region.height >= 2:
-            gap = max(0, region.width - 6 - 6)
+        if context.height >= 2:
+            gap = max(0, context.width - 6 - 6)
             nav_line = "< Prev" + " " * gap + "Next >"
-            nav_line = nav_line[: region.width].ljust(region.width)
-            print(
-                term.move(region.row + 1, region.col) + nav_line,
-                end="", flush=False,
-            )
+            nav_line = nav_line[: context.width].ljust(context.width)
+            cmds.append(WriteCmd(row=1, col=0, text=nav_line))
+
+        return cmds
 
     def handle_key(self, key) -> tuple:
         if key.startswith("KEY_"):
@@ -177,59 +175,58 @@ class _CalendarInteraction(Interaction):
         self._state = state
         self._wants_exit = False
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         year   = self._state["month"].year
         month  = self._state["month"].month
         cursor = self._state["cursor"]
         today  = datetime.date.today()
 
         cal_w = 7 * _CELL_W          # 21
-        pad   = max(0, (region.width - cal_w) // 2)
-        col   = region.col
-        row   = region.row
+        pad   = max(0, (context.width - cal_w) // 2)
+        cmds: list[DrawCommand] = []
+        display_row = 0  # region-relative row counter
 
         # -- Header row ---------------------------------------------------------
-        header_line = (" " * pad + _DAY_HEADER)[: region.width].ljust(region.width)
-        print(term.move(row, col) + header_line, end="", flush=False)
-        row += 1
+        header_line = (" " * pad + _DAY_HEADER)[: context.width].ljust(context.width)
+        cmds.append(WriteCmd(row=display_row, col=0, text=header_line))
+        display_row += 1
 
         # -- Date rows ----------------------------------------------------------
         weeks = _SUNDAY_CAL.monthdayscalendar(year, month)
         for week in weeks:
-            if row >= region.row + region.height:
+            if display_row >= context.height:
                 break
-            # Clear the row first (styled chars can't be ljust-padded safely)
-            print(term.move(row, col) + " " * region.width, end="", flush=False)
+            # Clear the whole row first
+            cmds.append(WriteCmd(row=display_row, col=0,
+                                 text=" " * context.width))
 
             for i, day in enumerate(week):
-                cell_col = col + pad + i * _CELL_W
                 if day == 0:
                     continue  # padding cell — already blank
 
                 d    = datetime.date(year, month, day)
                 cell = f"{day:2d} "
+                cell_col = pad + i * _CELL_W
 
                 if d == cursor:
-                    try:
-                        styled = term.reverse + term.bold + cell + term.normal
-                    except Exception:
-                        styled = f"[{day:>2}]"
+                    style = {'reverse': True, 'bold': True}
                 elif d == today:
-                    try:
-                        styled = term.bold + cell + term.normal
-                    except Exception:
-                        styled = cell
+                    style = {'bold': True}
                 else:
-                    styled = cell
+                    style = None
 
-                print(term.move(row, cell_col) + styled, end="", flush=False)
+                cmds.append(WriteCmd(row=display_row, col=cell_col,
+                                     text=cell, style=style))
 
-            row += 1
+            display_row += 1
 
         # -- Clear any remaining rows -------------------------------------------
-        while row < region.row + region.height:
-            print(term.move(row, col) + " " * region.width, end="", flush=False)
-            row += 1
+        if display_row < context.height:
+            cmds.append(FillCmd(row=display_row, col=0,
+                                width=context.width,
+                                height=context.height - display_row))
+
+        return cmds
 
     def handle_key(self, key) -> tuple:
         cursor = self._state["cursor"]

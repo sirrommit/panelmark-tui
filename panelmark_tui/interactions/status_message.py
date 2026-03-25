@@ -2,7 +2,7 @@
 
 Displays a single-line message with one of three severity styles:
 
-  - ``"error"``   — prefixed with ``✗ ``, rendered in red (or reverse if no colour)
+  - ``"error"``   — prefixed with ``✗ ``, rendered in red (or plain if no colour)
   - ``"success"`` — prefixed with ``✓ ``, rendered in green
   - ``"info"``    — prefixed with ``ℹ ``, rendered in the terminal default colour
 
@@ -24,12 +24,18 @@ Example::
 """
 
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
 _PREFIXES = {
     "error":   "✗ ",
     "success": "✓ ",
     "info":    "ℹ ",
+}
+
+_COLORS = {
+    "error":   "red",
+    "success": "green",
 }
 
 
@@ -51,32 +57,25 @@ class StatusMessage(Interaction):
     # Rendering
     # ------------------------------------------------------------------
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        cmds: list[DrawCommand] = []
+
         if not self._message:
-            blank = " " * region.width
-            print(term.move(region.row, region.col) + blank, end="", flush=False)
-            for r in range(1, region.height):
-                print(term.move(region.row + r, region.col) + blank, end="", flush=False)
-            return
+            cmds.append(FillCmd(row=0, col=0, width=context.width, height=context.height))
+            return cmds
 
         prefix  = _PREFIXES.get(self._style, "")
         text    = f"{prefix}{self._message}"
-        clipped = text[:region.width].ljust(region.width)
+        clipped = text[:context.width].ljust(context.width)
 
-        # Apply colour if supported
-        styled = clipped
-        try:
-            if self._style == "error":
-                styled = term.red + clipped + term.normal
-            elif self._style == "success":
-                styled = term.green + clipped + term.normal
-        except Exception:
-            pass  # terminal has no colour support; fall back to plain text
+        color = _COLORS.get(self._style)
+        style = {'color': color} if color and context.supports('color') else None
+        cmds.append(WriteCmd(row=0, col=0, text=clipped, style=style))
 
-        print(term.move(region.row, region.col) + styled, end="", flush=False)
-        blank = " " * region.width
-        for r in range(1, region.height):
-            print(term.move(region.row + r, region.col) + blank, end="", flush=False)
+        if context.height > 1:
+            cmds.append(FillCmd(row=1, col=0, width=context.width, height=context.height - 1))
+
+        return cmds
 
     # ------------------------------------------------------------------
     # Interaction protocol (display-only)

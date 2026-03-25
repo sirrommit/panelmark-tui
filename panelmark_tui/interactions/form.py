@@ -1,4 +1,5 @@
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
 _VALID_TYPES = {"str", "int", "float", "bool", "choices"}
@@ -60,14 +61,11 @@ class FormInput(Interaction):
 
             self._field_errors[key] = None
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         num_fields = len(self._field_keys)
-        # Each field takes 1 row (possibly 2 if there's an error)
-        # + separator + submit
-        rows_available = region.height
 
-        # Build display lines
-        display_rows = []
+        # Build display rows as (text, style) tuples
+        display_rows: list[tuple[str, dict | None]] = []
         for i, key in enumerate(self._field_keys):
             defn = self._fields[key]
             descriptor = defn['descriptor']
@@ -85,45 +83,34 @@ class FormInput(Interaction):
             else:
                 placeholder = defn.get('placeholder', '')
                 if state == '' and placeholder:
-                    value_str = f'[{placeholder[:max(0, region.width - len(descriptor) - 5)]}]'
+                    value_str = f'[{placeholder[:max(0, context.width - len(descriptor) - 5)]}]'
                 else:
                     value_str = f'[{state}]'
 
             line = f'  {descriptor:<12}: {value_str}'
-            line = line[:region.width].ljust(region.width)
+            line = line[:context.width].ljust(context.width)
 
             is_active = (i == self._active_index) and focused
-            if is_active:
-                try:
-                    line = term.reverse + line + term.normal
-                except Exception:
-                    line = '> ' + line[2:]
-
-            display_rows.append(line)
+            display_rows.append((line, {'reverse': True} if is_active else None))
 
             if error:
                 err_line = f'  {"":12}  ! {error}'
-                err_line = err_line[:region.width].ljust(region.width)
-                display_rows.append(err_line)
+                err_line = err_line[:context.width].ljust(context.width)
+                display_rows.append((err_line, None))
 
         # Separator
-        sep = '-' * min(region.width, 34)
-        display_rows.append(sep.ljust(region.width))
+        sep = '-' * min(context.width, 34)
+        display_rows.append((sep.ljust(context.width), None))
 
         # Submit button
-        submit_line = '  [ Submit ]'.ljust(region.width)
+        submit_line = '  [ Submit ]'.ljust(context.width)
         is_submit_active = (self._active_index == num_fields) and focused
-        if is_submit_active:
-            try:
-                submit_line = term.reverse + submit_line + term.normal
-            except Exception:
-                submit_line = '> [ Submit ]'.ljust(region.width)
-        display_rows.append(submit_line)
+        display_rows.append((submit_line, {'reverse': True} if is_submit_active else None))
 
         # Compute which display row the active item is on
         active_display_row = 0
         if self._active_index == num_fields:
-            active_display_row = len(display_rows) - 1   # Submit is last
+            active_display_row = len(display_rows) - 1
         else:
             row_cursor = 0
             for i, key in enumerate(self._field_keys):
@@ -134,24 +121,25 @@ class FormInput(Interaction):
 
         # Scroll to keep active row visible
         total_rows = len(display_rows)
-        if total_rows <= region.height:
+        if total_rows <= context.height:
             self._scroll_offset = 0
         else:
             if active_display_row < self._scroll_offset:
                 self._scroll_offset = active_display_row
-            elif active_display_row >= self._scroll_offset + region.height:
-                self._scroll_offset = active_display_row - region.height + 1
-            self._scroll_offset = max(0, min(self._scroll_offset, total_rows - region.height))
+            elif active_display_row >= self._scroll_offset + context.height:
+                self._scroll_offset = active_display_row - context.height + 1
+            self._scroll_offset = max(0, min(self._scroll_offset, total_rows - context.height))
 
-        # Render visible rows
-        visible = display_rows[self._scroll_offset:self._scroll_offset + region.height]
-        for i in range(region.height):
-            row = region.row + i
+        # Build commands for visible rows
+        cmds: list[DrawCommand] = []
+        visible = display_rows[self._scroll_offset:self._scroll_offset + context.height]
+        for i in range(context.height):
             if i < len(visible):
-                content = visible[i]
+                text, style = visible[i]
+                cmds.append(WriteCmd(row=i, col=0, text=text, style=style))
             else:
-                content = ' ' * region.width
-            print(term.move(row, region.col) + content, end='', flush=False)
+                cmds.append(WriteCmd(row=i, col=0, text=' ' * context.width))
+        return cmds
 
     def handle_key(self, key) -> tuple:
         self._wants_exit = False

@@ -43,6 +43,7 @@ import datetime
 
 from panelmark_tui import Shell
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 from panelmark_tui.interactions import ListView, MenuReturn
 from panelmark_tui.renderer import Renderer
 from panelmark_tui.events import EventLoop
@@ -88,27 +89,23 @@ class _BarInteraction(Interaction):
     def is_focusable(self):
         return False
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         current = self._state.get("current", 0)
         total   = self._state.get("total",   100) or 1
         pct     = int(100 * current / total)
         pct     = max(0, min(100, pct))
 
         # Reserve 7 chars for "[ ] XXX%" (brackets + space + 3-digit pct + %)
-        bar_w   = max(1, region.width - 7)
+        bar_w   = max(1, context.width - 7)
         filled  = min(bar_w, int(bar_w * current / total))
         bar_str = "\u2588" * filled + "\u2591" * (bar_w - filled)
         line    = f"[{bar_str}] {pct:3d}%"
-        line    = line[: region.width].ljust(region.width)
+        line    = line[: context.width].ljust(context.width)
 
-        print(term.move(region.row, region.col) + line, end="", flush=False)
-
-        # Clear any remaining rows in the region
-        for r in range(1, region.height):
-            print(
-                term.move(region.row + r, region.col) + " " * region.width,
-                end="", flush=False,
-            )
+        cmds: list[DrawCommand] = [WriteCmd(row=0, col=0, text=line)]
+        if context.height > 1:
+            cmds.append(FillCmd(row=1, col=0, width=context.width, height=context.height - 1))
+        return cmds
 
     def handle_key(self, key) -> tuple:
         return False, self.get_value()
@@ -191,7 +188,6 @@ class _ProgressHandle:
                 renderer.render_region(
                     popup._regions[name],
                     popup._interactions[name],
-                    term,
                     name == popup._focused,
                 )
         popup._dirty.clear()

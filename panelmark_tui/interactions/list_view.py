@@ -1,4 +1,5 @@
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
 def _to_roman(n: int, upper: bool = True) -> str:
@@ -41,23 +42,25 @@ class ListView(Interaction):
         self._items = list(items)
         self._bullet = bullet
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        cmds: list[DrawCommand] = []
         for i, item in enumerate(self._items):
-            row = region.row + i
-            if row >= region.row + region.height:
+            if i >= context.height:
                 break
             bullet = _get_bullet(self._bullet, i)
             line = f'{bullet} {item}'
-            display = line[:region.width].ljust(region.width)
-            print(term.move(row, region.col) + display, end='', flush=False)
+            display = line[:context.width].ljust(context.width)
+            cmds.append(WriteCmd(row=i, col=0, text=display))
 
-        # Clear remaining lines
-        for i in range(len(self._items), region.height):
-            row = region.row + i
-            print(term.move(row, region.col) + ' ' * region.width, end='', flush=False)
+        trailing = context.height - min(len(self._items), context.height)
+        if trailing > 0:
+            cmds.append(FillCmd(
+                row=context.height - trailing, col=0,
+                width=context.width, height=trailing,
+            ))
+        return cmds
 
     def handle_key(self, key) -> tuple:
-        # Display only, no key handling
         return False, self.get_value()
 
     def get_value(self) -> list:
@@ -76,32 +79,36 @@ class SubList(Interaction):
         self._items = items
         self._bullet = bullet
 
-    def _render_items(self, items: list, region, term, start_row: int, indent: int, max_row: int) -> int:
-        """Recursively render items. Returns the next row to render to."""
+    def _build_items(
+        self, items: list, context: RenderContext,
+        start_row: int, indent: int,
+    ) -> tuple[list[DrawCommand], int]:
+        """Recursively build draw commands. Returns (cmds, next_row)."""
+        cmds: list[DrawCommand] = []
         row = start_row
         i = 0
         for item in items:
-            if row >= max_row:
+            if row >= context.height:
                 break
             if isinstance(item, list):
-                row = self._render_items(item, region, term, row, indent + 2, max_row)
+                sub_cmds, row = self._build_items(item, context, row, indent + 2)
+                cmds.extend(sub_cmds)
             else:
                 bullet = _get_bullet(self._bullet, i)
                 prefix = ' ' * indent
                 line = f'{prefix}{bullet} {item}'
-                display = line[:region.width].ljust(region.width)
-                print(term.move(row, region.col) + display, end='', flush=False)
+                display = line[:context.width].ljust(context.width)
+                cmds.append(WriteCmd(row=row, col=0, text=display))
                 row += 1
                 i += 1
-        return row
+        return cmds, row
 
-    def render(self, region, term, focused: bool = False) -> None:
-        max_row = region.row + region.height
-        next_row = self._render_items(self._items, region, term, region.row, 0, max_row)
-
-        # Clear remaining lines
-        for row in range(next_row, max_row):
-            print(term.move(row, region.col) + ' ' * region.width, end='', flush=False)
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        cmds, next_row = self._build_items(self._items, context, 0, 0)
+        trailing = context.height - next_row
+        if trailing > 0:
+            cmds.append(FillCmd(row=next_row, col=0, width=context.width, height=trailing))
+        return cmds
 
     def handle_key(self, key) -> tuple:
         return False, self.get_value()

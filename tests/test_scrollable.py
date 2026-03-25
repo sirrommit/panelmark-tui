@@ -1,21 +1,14 @@
 """Tests for _ScrollableList scroll behaviour in menu and checkbox interactions."""
 
-import io
-import sys
 import pytest
-from panelmark_tui.testing import MockTerminal, make_key
+from panelmark_tui.testing import make_key
 from panelmark_tui.interactions import MenuFunction, MenuReturn, MenuHybrid, CheckBox
-from panelmark.layout import Region
+from panelmark.draw import RenderContext, WriteCmd
 
 
-@pytest.fixture
-def term():
-    return MockTerminal(width=80, height=24)
-
-
-def small_region(height):
-    """Region that shows only *height* rows at a time."""
-    return Region(name='test', row=0, col=0, width=40, height=height)
+def ctx(height):
+    """RenderContext that shows only *height* rows at a time."""
+    return RenderContext(width=40, height=height)
 
 
 def make_labels(n):
@@ -28,14 +21,8 @@ def make_labels(n):
 # ---------------------------------------------------------------------------
 
 def prime(interaction, height):
-    """Render into a small region so _last_height is stored."""
-    buf = io.StringIO()
-    region = small_region(height)
-    old, sys.stdout = sys.stdout, buf
-    try:
-        interaction.render(region, MockTerminal(width=80, height=24), focused=False)
-    finally:
-        sys.stdout = old
+    """Render into a small context so _last_height is stored."""
+    interaction.render(ctx(height), focused=False)
     return interaction
 
 
@@ -167,36 +154,24 @@ class TestCheckBoxScroll:
 
 
 # ---------------------------------------------------------------------------
-# Render output — active item is inside the rendered lines
+# Render output — active item is inside the rendered commands
 # ---------------------------------------------------------------------------
 
 class TestScrollRender:
     def test_active_item_rendered_after_scroll(self):
         m = MenuReturn(make_labels(10))
-        region = small_region(3)
-        buf = io.StringIO()
-        # Navigate to item 5
         prime(m, 3)
         for _ in range(5):
             m.handle_key('KEY_DOWN')
-        # Render and check that 'Item 5' appears in output
-        old, sys.stdout = sys.stdout, buf
-        try:
-            m.render(region, MockTerminal(width=80, height=24), focused=True)
-        finally:
-            sys.stdout = old
-        assert 'Item 5' in buf.getvalue()
+        cmds = m.render(ctx(3), focused=True)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert any('Item 5' in t for t in texts)
 
     def test_first_item_not_rendered_after_scroll(self):
         m = MenuReturn(make_labels(10))
-        region = small_region(3)
-        buf = io.StringIO()
         prime(m, 3)
         for _ in range(5):
             m.handle_key('KEY_DOWN')
-        old, sys.stdout = sys.stdout, buf
-        try:
-            m.render(region, MockTerminal(width=80, height=24), focused=False)
-        finally:
-            sys.stdout = old
-        assert 'Item 0' not in buf.getvalue()
+        cmds = m.render(ctx(3), focused=False)
+        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
+        assert not any('Item 0' in t for t in texts)

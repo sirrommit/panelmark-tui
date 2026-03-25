@@ -1,5 +1,6 @@
 from typing import Literal
 from panelmark.interactions.base import Interaction
+from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd, CursorCmd
 
 
 class TextBox(Interaction):
@@ -17,43 +18,43 @@ class TextBox(Interaction):
         self._cursor_pos = len(initial)  # position in text
         self._scroll_offset = 0  # row scroll offset
 
-    def render(self, region, term, focused: bool = False) -> None:
-        lines = self._get_display_lines(region.width)
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
+        lines = self._get_display_lines(context.width)
 
         # Adjust scroll to show cursor
         if focused:
-            cursor_line = self._get_cursor_line(region.width)
+            cursor_line = self._get_cursor_line(context.width)
             if cursor_line < self._scroll_offset:
                 self._scroll_offset = cursor_line
-            elif cursor_line >= self._scroll_offset + region.height:
-                self._scroll_offset = cursor_line - region.height + 1
+            elif cursor_line >= self._scroll_offset + context.height:
+                self._scroll_offset = cursor_line - context.height + 1
 
-        visible_lines = lines[self._scroll_offset:self._scroll_offset + region.height]
+        visible_lines = lines[self._scroll_offset:self._scroll_offset + context.height]
 
-        for i in range(region.height):
-            row = region.row + i
+        cmds: list[DrawCommand] = []
+        for i in range(context.height):
             if i < len(visible_lines):
-                line = visible_lines[i]
-                display = line[:region.width].ljust(region.width)
+                text = visible_lines[i][:context.width].ljust(context.width)
             else:
-                display = ' ' * region.width
-            print(term.move(row, region.col) + display, end='', flush=False)
+                text = ' ' * context.width
+            cmds.append(WriteCmd(row=i, col=0, text=text))
 
         # Draw cursor if focused
         if focused and not self._readonly:
-            cursor_line = self._get_cursor_line(region.width)
-            cursor_col_in_line = self._get_cursor_col_in_line(region.width)
+            cursor_line = self._get_cursor_line(context.width)
+            cursor_col_in_line = self._get_cursor_col_in_line(context.width)
             visible_cursor_row = cursor_line - self._scroll_offset
-            if 0 <= visible_cursor_row < region.height:
-                abs_row = region.row + visible_cursor_row
-                abs_col = region.col + min(cursor_col_in_line, region.width - 1)
+            if 0 <= visible_cursor_row < context.height:
+                col = min(cursor_col_in_line, context.width - 1)
                 lines_at_cursor = lines[cursor_line] if cursor_line < len(lines) else ''
-                char_at_cursor = lines_at_cursor[cursor_col_in_line:cursor_col_in_line+1] or ' '
-                try:
-                    cursor_char = term.reverse + char_at_cursor + term.normal
-                except Exception:
-                    cursor_char = char_at_cursor
-                print(term.move(abs_row, abs_col) + cursor_char, end='', flush=False)
+                char_at = lines_at_cursor[cursor_col_in_line:cursor_col_in_line + 1] or ' '
+                cmds.append(WriteCmd(
+                    row=visible_cursor_row, col=col,
+                    text=char_at, style={'reverse': True},
+                ))
+                cmds.append(CursorCmd(row=visible_cursor_row, col=col))
+
+        return cmds
 
     def _get_display_lines(self, width: int) -> list:
         """Split text into display lines based on wrap mode."""
@@ -69,7 +70,6 @@ class TextBox(Interaction):
                 result.append('')
                 continue
             if self._wrap == 'anywhere':
-                # Split at exactly width chars
                 while len(paragraph) > width:
                     result.append(paragraph[:width])
                     paragraph = paragraph[width:]
@@ -97,7 +97,7 @@ class TextBox(Interaction):
             line_len = len(line)
             if char_count + line_len >= self._cursor_pos:
                 return i
-            char_count += line_len + 1  # +1 for newline between paragraphs (simplified)
+            char_count += line_len + 1
         return max(0, len(lines) - 1)
 
     def _get_cursor_col_in_line(self, width: int) -> int:
@@ -122,7 +122,7 @@ class TextBox(Interaction):
                     self._text = self._text[:self._cursor_pos-1] + self._text[self._cursor_pos:]
                     self._cursor_pos -= 1
                     return True, self.get_value()
-            elif name == 'KEY_DC':  # Delete forward
+            elif name == 'KEY_DC':
                 if self._cursor_pos < len(self._text):
                     self._text = self._text[:self._cursor_pos] + self._text[self._cursor_pos+1:]
                     return True, self.get_value()
@@ -137,7 +137,6 @@ class TextBox(Interaction):
             elif name == 'KEY_END':
                 self._cursor_pos = len(self._text)
             elif name == 'KEY_ENTER':
-                # Insert newline
                 self._text = self._text[:self._cursor_pos] + '\n' + self._text[self._cursor_pos:]
                 self._cursor_pos += 1
                 return True, self.get_value()

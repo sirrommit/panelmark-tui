@@ -1,4 +1,5 @@
 from typing import Literal
+from panelmark.draw import DrawCommand, RenderContext
 from .scrollable import _ScrollableList
 
 
@@ -16,7 +17,7 @@ class CheckBox(_ScrollableList):
         self._active_index = 0
         self._scroll_offset = 0
 
-    def render(self, region, term, focused: bool = False) -> None:
+    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         all_lines = []
         for label in self._labels:
             checked = self._items[label]
@@ -26,8 +27,8 @@ class CheckBox(_ScrollableList):
                 prefix = '(●)' if checked else '( )'
             all_lines.append(f'{prefix} {label}')
 
-        viewport = all_lines[self._scroll_offset: self._scroll_offset + region.height]
-        self._render_rows(viewport, region, term, focused, active_marker=False)
+        viewport = all_lines[self._scroll_offset: self._scroll_offset + context.height]
+        return self._build_rows(viewport, context, focused, active_marker=False)
 
     def handle_key(self, key) -> tuple:
         if key.startswith("KEY_"):
