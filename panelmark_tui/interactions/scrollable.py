@@ -1,59 +1,111 @@
-"""_ScrollableList — shared base for vertically scrollable list interactions.
+"""Scroll-state mixin and scrollable-list base for panelmark-tui interactions.
 
-Subclasses inherit:
-  - ``_active_index``  / ``_scroll_offset`` scroll state
-  - ``_clamp_scroll()`` — adjusts offset so the active item is always visible
-  - ``_build_rows()``  — builds a ``list[DrawCommand]`` for the visible
-                         viewport slice with focus/active highlighting and
-                         trailing-row fill commands
+Two classes are exported:
 
-Usage in a subclass render()::
+``_Scrollable``
+    A pure mixin (no ``Interaction`` inheritance) providing scroll state and
+    helpers.  Combine with ``Interaction`` to build any scrollable interaction::
+
+        class MyView(_Scrollable, Interaction):
+            ...
+
+    Members:
+
+    * ``_scroll_offset``    — first visible row index (updated by helpers)
+    * ``_last_height``      — viewport height from the most recent render call
+    * ``_clamp_scroll_to(target_row)`` — ensure *target_row* is visible
+    * ``_scroll_by(delta, total_items)`` — shift offset by *delta* rows,
+      clamped to ``[0, total_items − height]``
+
+``_ScrollableList``
+    Abstract base for **interactive** scrollable lists (menus, checkboxes).
+    Extends ``_Scrollable`` and adds:
+
+    * ``_active_index``    — currently highlighted item (0-based)
+    * ``_clamp_scroll()``  — convenience wrapper: ``_clamp_scroll_to(_active_index)``
+    * ``_build_rows(display_lines, context, focused, active_marker)``
+      — returns ``list[DrawCommand]`` for the visible viewport slice with
+      focus/active highlighting and trailing ``FillCmd``
+
+Usage in a ``_ScrollableList`` subclass ``render()``::
 
     def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
         viewport = self._labels[self._scroll_offset:
                                  self._scroll_offset + context.height]
         return self._build_rows(viewport, context, focused)
 
-Usage after moving _active_index in handle_key()::
+Usage after moving ``_active_index`` in ``handle_key()``::
 
     self._active_index = max(0, self._active_index - 1)
     self._clamp_scroll()
 
 Future extraction note
 ----------------------
-The scroll state block (``_active_index``, ``_scroll_offset``, ``_last_height``,
-``_clamp_scroll``) is intentionally kept separate from ``_build_rows``.  A
-future ``_Scrollable`` base class (Phase 9) will lift exactly that block out,
-allowing display-only scrollable interactions to inherit scroll state without
-inheriting the list-selection machinery.
+``_Scrollable`` is already the clean base class for Phase 9.  ``ListView``
+and ``SubList`` extend it directly so that display-only interactions can
+inherit scroll state without inheriting the list-selection machinery.
+``_ScrollableList`` uses ``_active_index``-based clamping on top of the same
+scroll primitives.
 """
 
 from panelmark.interactions.base import Interaction
 from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
-class _ScrollableList(Interaction):
-    """Abstract base for list-like interactions that support scroll offset."""
+# ---------------------------------------------------------------------------
+# _Scrollable — pure scroll-state mixin
+# ---------------------------------------------------------------------------
 
-    # ------------------------------------------------------------------
-    # Scroll state  (future _Scrollable base class extracts this block)
-    # ------------------------------------------------------------------
+class _Scrollable:
+    """Pure mixin providing scroll state and helpers.
 
-    _active_index: int = 0
+    Do not extend ``Interaction`` directly — combine with it::
+
+        class MyView(_Scrollable, Interaction): ...
+    """
+
     _scroll_offset: int = 0
     _last_height: int = 10   # updated on every render call
 
-    def _clamp_scroll(self) -> None:
-        """Adjust _scroll_offset so _active_index is within the viewport.
+    def _clamp_scroll_to(self, target_row: int) -> None:
+        """Adjust ``_scroll_offset`` so *target_row* is within the viewport.
 
-        Uses the height recorded on the last render() call.  Safe to call
-        before the first render (falls back to _last_height = 10).
+        Uses ``_last_height`` from the most recent ``render()`` call.
+        Safe to call before the first render (falls back to ``_last_height=10``).
         """
         h = max(1, self._last_height)
-        if self._active_index < self._scroll_offset:
-            self._scroll_offset = self._active_index
-        elif self._active_index >= self._scroll_offset + h:
-            self._scroll_offset = self._active_index - h + 1
+        if target_row < self._scroll_offset:
+            self._scroll_offset = target_row
+        elif target_row >= self._scroll_offset + h:
+            self._scroll_offset = target_row - h + 1
+
+    def _scroll_by(self, delta: int, total_items: int) -> None:
+        """Shift ``_scroll_offset`` by *delta* rows.
+
+        The result is clamped to ``[0, max(0, total_items − height)]`` so
+        the offset never goes out of range.
+        """
+        h = max(1, self._last_height)
+        max_offset = max(0, total_items - h)
+        self._scroll_offset = max(0, min(self._scroll_offset + delta, max_offset))
+
+
+# ---------------------------------------------------------------------------
+# _ScrollableList — interactive list base (menus, checkboxes)
+# ---------------------------------------------------------------------------
+
+class _ScrollableList(_Scrollable, Interaction):
+    """Abstract base for list-like interactions that support scroll offset."""
+
+    _active_index: int = 0
+
+    def _clamp_scroll(self) -> None:
+        """Adjust ``_scroll_offset`` so ``_active_index`` is within the viewport.
+
+        Convenience wrapper around ``_clamp_scroll_to``; call this after
+        changing ``_active_index`` in ``handle_key()``.
+        """
+        self._clamp_scroll_to(self._active_index)
 
     # ------------------------------------------------------------------
     # Row building
@@ -108,4 +160,3 @@ class _ScrollableList(Interaction):
             ))
 
         return cmds
-
