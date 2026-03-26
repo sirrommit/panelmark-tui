@@ -73,13 +73,15 @@ Phase 4 is self-contained; either option can proceed independently of Phase 5.
 
 ---
 
-## Phase 5 — Panel headings
+## Phase 5 — Panel headings ✅
 
-- [ ] Decide rendering: centred title in the top border row of the panel (recommended)
-- [ ] Implement in `panelmark_tui/renderer.py` (or wherever border rendering lives)
-- [ ] Add tests confirming the heading text appears in the rendered output
-- [ ] Update `shell-language.md` and `KNOWN_LIMITATIONS.md` to reflect headings are now
-      rendered
+- ✅ Decided rendering: `├─── Heading ───┤` single-line sub-border at top of panel content area
+- ✅ Implemented in `panelmark_tui/renderer.py` (`_content_region`, `_render_panel_heading`);
+      `heading` field added to `Region` in `panelmark/panelmark/layout.py` and propagated
+      from `Panel` in `_resolve_node`
+- ✅ 6 new tests in `test_renderer.py` (heading text in output, junction chars, reduced height,
+      empty region, field population)
+- ✅ Updated `shell-language.md`, `KNOWN_LIMITATIONS.md`, and `README.md`
 
 ---
 
@@ -148,7 +150,7 @@ Do last; there is no point polishing docs that may still change.
 | Issue | Where to fix | Phase |
 |-------|-------------|-------|
 | Fill-only VSplit collapses right column | `panelmark/layout.py` | 2 |
-| Panel headings parsed but not rendered | `panelmark_tui/renderer.py` | 5 |
+| Panel headings parsed but not rendered | `panelmark_tui/renderer.py` | ~~5~~ ✅ |
 | `SubList` not a real tree | `interactions/list_view.py` + docs | ~~4~~ ✅ |
 | Paging keys missing from menus | `interactions/menu.py` + checkbox | ~~3~~ ✅ |
 | `MenuHybrid` docs wrong | `docs/interactions.md` | 1 |

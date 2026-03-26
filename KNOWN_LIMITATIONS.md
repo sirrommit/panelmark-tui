@@ -14,14 +14,7 @@ behaviour is, and when a fix is planned.
 
 ## Shell language
 
-### Panel headings are not rendered by `panelmark-tui`
-
-**Package:** `panelmark-tui`
-**Current behaviour:** The `__text__` heading syntax is parsed by the core parser and stored
-in `Panel.heading`, but `panelmark-tui` does not render headings anywhere — they are silently
-ignored at display time.
-**Planned fix:** Phase 5 of the roadmap (render as centred title in the panel's top border
-row).
+*(No known shell-language limitations.)*
 
 ---
 

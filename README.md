@@ -20,7 +20,7 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | `TreeView` | ✅ Interactive collapsible tree — expand/collapse, full keyboard navigation |
 | Paging keys (Page Up/Down, Home/End) in menus | ✅ Implemented in all list interactions |
 | 7 modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
-| Panel headings (`__text__` syntax) | ⚠️ Parsed and stored, **not rendered** by this package |
+| Panel headings (`__text__` syntax) | ✅ Rendered as `├─── Heading ───┤` at top of panel content area |
 | Equal-width fill splits (all fill-width columns) | ✅ Columns share space equally (differ by at most 1 char) |
 
 See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.

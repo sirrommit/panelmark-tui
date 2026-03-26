@@ -209,17 +209,52 @@ class Renderer:
                     None, left_div, right_div, term_width)
 
     def render_region(self, region: Region, interaction, focused: bool):
-        context = build_render_context(region, self._term)
+        content_region = self._content_region(region)
+        context = build_render_context(content_region, self._term)
         commands = interaction.render(context, focused)
         executor = TUICommandExecutor(self._term)
-        executor.execute(commands, region)
+        executor.execute(commands, content_region)
 
     def _render_empty_region(self, region: Region, focused: bool):
         term = self._term
-        for row_offset in range(region.height):
-            row = region.row + row_offset
-            print(term.move(row, region.col) + ' ' * region.width,
+        content_region = self._content_region(region)
+        for row_offset in range(content_region.height):
+            row = content_region.row + row_offset
+            print(term.move(row, content_region.col) + ' ' * content_region.width,
                   end='', flush=False)
+
+    def _content_region(self, region: Region) -> Region:
+        """Return the region to use for content rendering.
+
+        When the region has a heading, draw the heading border on the top row
+        and return a Region that starts one row lower with height decremented by 1.
+        """
+        if not region.heading:
+            return region
+        self._render_panel_heading(region)
+        return Region(
+            name=region.name,
+            row=region.row + 1,
+            col=region.col,
+            width=region.width,
+            height=max(0, region.height - 1),
+        )
+
+    def _render_panel_heading(self, region: Region) -> None:
+        """Draw a ├─── Heading ───┤ line at the top row of *region*."""
+        start_col = region.col - 1
+        end_col = region.col + region.width
+        v_dividers = {start_col: 'single', end_col: 'single'}
+        self.draw_border(
+            row=region.row,
+            term_width=None,
+            style='single',
+            title=region.heading,
+            prev_dividers=v_dividers,
+            next_dividers=v_dividers,
+            start_col=start_col,
+            end_col=end_col,
+        )
 
     def draw_border(self, row: int, term_width, style: str, title=None,
                     prev_dividers: dict | None = None,

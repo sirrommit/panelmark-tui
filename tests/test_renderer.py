@@ -134,6 +134,87 @@ class TestRendererFullRender:
         assert '─' in out or '├' in out or '┤' in out
 
 
+class TestRendererPanelHeadings:
+    def test_heading_text_appears_in_output(self, renderer, term, capsys):
+        shell_def = """
+|=====|
+|{__Navigation__ 10R $menu$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(80, 24)
+        regions = {r.name: r for r in regions_list}
+        interaction = MenuReturn({'A': 1, 'B': 2})
+
+        renderer.full_render(model, regions, {'menu': interaction}, 'menu', 80, 24)
+        out = capsys.readouterr().out
+        assert 'Navigation' in out
+
+    def test_heading_region_field_populated(self):
+        shell_def = """
+|=====|
+|{__Navigation__ 10R $menu$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(80, 24)
+        regions = {r.name: r for r in regions_list}
+        assert regions['menu'].heading == 'Navigation'
+
+    def test_no_heading_region_field_is_none(self):
+        shell_def = """
+|=====|
+|{10R $menu$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(80, 24)
+        regions = {r.name: r for r in regions_list}
+        assert regions['menu'].heading is None
+
+    def test_heading_uses_junction_chars(self, renderer, term, capsys):
+        shell_def = """
+|=====|
+|{__Title__ 5R $p$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(40, 12)
+        regions = {r.name: r for r in regions_list}
+
+        renderer.full_render(model, regions, {}, None, 40, 12)
+        out = capsys.readouterr().out
+        assert '├' in out and '┤' in out
+
+    def test_heading_interaction_gets_reduced_height(self, renderer, term):
+        shell_def = """
+|=====|
+|{__Nav__ 6R $menu$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(80, 24)
+        regions = {r.name: r for r in regions_list}
+        region = regions['menu']
+        assert region.height == 6
+        content_region = renderer._content_region(region)
+        assert content_region.height == 5
+        assert content_region.row == region.row + 1
+
+    def test_heading_empty_region_blanks_content_below_border(self, renderer, term, capsys):
+        shell_def = """
+|=====|
+|{__Nav__ 4R $p$ }|
+|=====|
+"""
+        model = Parser().parse(shell_def)
+        regions_list = model.resolve(40, 12)
+        regions = {r.name: r for r in regions_list}
+        renderer.full_render(model, regions, {}, None, 40, 12)
+        out = capsys.readouterr().out
+        assert 'Nav' in out
+
+
 class TestRendererFullRenderOffset:
     """full_render() with non-zero offset_row / offset_col (modal rendering)."""
 
