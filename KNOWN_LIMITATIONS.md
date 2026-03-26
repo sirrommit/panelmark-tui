@@ -8,14 +8,7 @@ behaviour is, and when a fix is planned.
 
 ## Layout
 
-### Equal-width fill splits are not guaranteed
-
-**Package:** `panelmark`
-**Current behaviour:** When all columns in a vertical split are fill-width (no fixed or
-percentage width specified), the left column takes almost all available space and the right
-column may collapse to near-zero width.
-**Expected behaviour (per docs):** Fill columns share remaining space equally.
-**Planned fix:** Phase 2 of the project roadmap (`panelmark/panelmark/layout.py`).
+*(No known layout limitations — equal fill-split distribution is now implemented.)*
 
 ---
 

@@ -33,15 +33,15 @@ Items marked ✅ are already done.
 
 ---
 
-## Phase 2 — Core layout bug
+## Phase 2 — Core layout bug ✅
 
-- [ ] **`panelmark/panelmark/layout.py`**: fix fill-only `VSplit` resolution — when all
-      columns are fill-width, distribute remaining space equally rather than giving it all
-      to the leftmost branch
-- [ ] Add tests in `test_layout.py` for equal fill distribution (two-column, three-column,
-      and mixed fixed + two-fill cases)
-- [ ] Update `shell-language.md` to guarantee equal distribution as a language-level rule
-      (it is already documented as the intent; now it will actually be true)
+- ✅ **`panelmark/panelmark/layout.py`**: added `_is_all_fill()` helper; rewrote
+      `_vsplit_left_width` to use equal column distribution for all-fill subtrees
+- ✅ 12 new tests in `test_layout.py` (two-fill equal, three-fill equal, width-sweep
+      differ-by-at-most-one, sum-to-available, `_is_all_fill` unit tests, regression
+      for fixed+fill unchanged)
+- ✅ Updated `shell-language.md` to guarantee equal distribution as a language-level rule
+- ✅ Updated both READMEs and `KNOWN_LIMITATIONS.md`
 
 ---
 
