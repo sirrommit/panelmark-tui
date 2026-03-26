@@ -39,7 +39,7 @@ import calendar as _calendar
 from panelmark_tui import Shell
 from panelmark.interactions.base import Interaction
 from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
-from panelmark_tui.widgets._utils import _SubmittingMenu
+from panelmark_tui.widgets._utils import _ModalWidget, _SubmittingMenu
 
 
 # ---------------------------------------------------------------------------
@@ -282,7 +282,7 @@ class _CalendarInteraction(Interaction):
 # Public widget class
 # ---------------------------------------------------------------------------
 
-class DatePicker:
+class DatePicker(_ModalWidget):
     """Monthly calendar popup for selecting a date.
 
     Parameters
@@ -311,36 +311,14 @@ class DatePicker:
         self.title = title
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the calendar popup.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is restored when the popup
-            closes.  Pass the ``sh`` argument from a ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.
-
-        Returns
-        -------
-        ``datetime.date`` on selection, ``None`` on Cancel / Escape / Ctrl+Q.
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
-
+    def _build_popup(self, term):
         # Shared mutable state — both interactions read/write through this dict.
         state = {
             "month":  _first_of(self.initial),
             "cursor": self.initial,
         }
-
         popup = Shell(_shell_def(self.title), _terminal=term)
         popup.assign("nav",      _NavBar(state))
         popup.assign("calendar", _CalendarInteraction(state))
         popup.assign("buttons",  _SubmittingMenu("calendar"))
-
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup

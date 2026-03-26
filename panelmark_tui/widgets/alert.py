@@ -26,6 +26,7 @@ Usage
 
 from panelmark_tui import Shell
 from panelmark_tui.interactions import ListView, MenuReturn
+from panelmark_tui.widgets._utils import _ModalWidget
 
 
 def _shell_def(title: str) -> str:
@@ -38,7 +39,7 @@ def _shell_def(title: str) -> str:
     )
 
 
-class Alert:
+class Alert(_ModalWidget):
     """Informational or warning popup with a single OK button.
 
     Parameters
@@ -66,29 +67,8 @@ class Alert:
         self.message_lines = list(message_lines) if message_lines is not None else []
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the popup and block until the user dismisses it.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is fully restored when the popup
-            closes.  Pass the ``sh`` argument received inside a
-            ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.  Use ``row``/``col`` to
-            override auto-centering.
-
-        Returns
-        -------
-        ``True`` on OK, ``None`` on Escape / Ctrl+Q.
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
+    def _build_popup(self, term):
         popup = Shell(_shell_def(self.title), _terminal=term)
         popup.assign("message", ListView(self.message_lines, bullet=" "))
         popup.assign("ok", MenuReturn({"OK": True}))
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup

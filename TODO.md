@@ -13,7 +13,7 @@ needs a follow-up adaptation.
   - `test-all` or equivalent with the required `PYTHONPATH`
   - `run-hello`
   - `run-task-manager`
-- [ ] Extract a shared modal/widget helper for repeated `Shell` construction and `run_modal()` patterns used across widgets.
+- [x] Extract a shared modal/widget helper for repeated `Shell` construction and `run_modal()` patterns used across widgets.
 
 ## API cleanup
 

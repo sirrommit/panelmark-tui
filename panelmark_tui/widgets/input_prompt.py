@@ -31,7 +31,7 @@ Usage
 
 from panelmark_tui import Shell
 from panelmark_tui.interactions import ListView, TextBox
-from panelmark_tui.widgets._utils import _SubmittingMenu
+from panelmark_tui.widgets._utils import _ModalWidget, _SubmittingMenu
 
 
 def _shell_def(title: str) -> str:
@@ -46,7 +46,7 @@ def _shell_def(title: str) -> str:
     )
 
 
-class InputPrompt:
+class InputPrompt(_ModalWidget):
     """Ask the user to enter a single line of text.
 
     Parameters
@@ -78,36 +78,9 @@ class InputPrompt:
         self.initial = initial
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the input popup and block until the user submits or cancels.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is fully restored when the popup
-            closes.  Pass the ``sh`` argument received inside a
-            ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.  Use ``row``/``col`` to
-            override auto-centering.
-
-        Returns
-        -------
-        The typed string on OK, ``None`` on Cancel / Escape / Ctrl+Q.
-
-        Notes
-        -----
-        Focus opens on the entry box.  Tab moves focus to the buttons.
-        Enter inside the entry box inserts a newline (extend mode); to
-        submit, Tab to OK and press Enter, or use the mouse (if supported).
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
+    def _build_popup(self, term):
         popup = Shell(_shell_def(self.title), _terminal=term)
         popup.assign("prompt",  ListView(self.prompt_lines, bullet=" "))
         popup.assign("entry",   TextBox(initial=self.initial, wrap="extend"))
         popup.assign("buttons", _SubmittingMenu("entry"))
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup

@@ -29,6 +29,7 @@ Usage
 
 from panelmark_tui import Shell
 from panelmark_tui.interactions import ListView, MenuReturn
+from panelmark_tui.widgets._utils import _ModalWidget
 
 
 def _shell_def(title: str) -> str:
@@ -43,7 +44,7 @@ def _shell_def(title: str) -> str:
     )
 
 
-class Confirm:
+class Confirm(_ModalWidget):
     """Centered confirmation popup with a message area and caller-supplied buttons.
 
     Parameters
@@ -77,30 +78,8 @@ class Confirm:
         self.buttons = dict(buttons) if buttons is not None else {"OK": True, "Cancel": False}
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the popup and block until the user makes a choice.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is fully restored when the popup
-            closes (erasing any ghost).  Pass the ``sh`` argument received
-            inside a ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.  Useful for overriding
-            ``row`` / ``col`` to position the popup at a specific location
-            instead of the default centered position.
-
-        Returns
-        -------
-        The selected button value, or ``None`` on Escape / Ctrl+Q.
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
+    def _build_popup(self, term):
         popup = Shell(_shell_def(self.title), _terminal=term)
         popup.assign("message", ListView(self.message_lines, bullet=" "))
         popup.assign("buttons", MenuReturn(self.buttons))
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup

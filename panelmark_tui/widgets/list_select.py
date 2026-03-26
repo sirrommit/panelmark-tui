@@ -41,7 +41,7 @@ Usage
 
 from panelmark_tui import Shell
 from panelmark_tui.interactions import ListView, MenuReturn, CheckBox
-from panelmark_tui.widgets._utils import _SubmittingMenu
+from panelmark_tui.widgets._utils import _ModalWidget, _SubmittingMenu
 
 
 def _single_shell(title: str) -> str:
@@ -80,7 +80,7 @@ def _to_checkbox(items) -> dict:
     return {str(item): False for item in items}
 
 
-class ListSelect:
+class ListSelect(_ModalWidget):
     """Pick one item (single mode) or many items (multi mode) from a scrollable list.
 
     Parameters
@@ -126,25 +126,7 @@ class ListSelect:
         self.multi = multi
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the list popup and block until the user makes a selection.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is restored when the popup
-            closes.  Pass the ``sh`` argument from a ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.  Use ``row``/``col`` to
-            override auto-centering.
-
-        Returns
-        -------
-        Single mode: the selected item value, or ``None`` on Escape / Ctrl+Q.
-        Multi mode: ``dict[str, bool]`` on OK, ``None`` on Cancel / Escape / Ctrl+Q.
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
-
+    def _build_popup(self, term):
         if self.multi:
             popup = Shell(_multi_shell(self.title), _terminal=term)
             popup.assign("prompt",  ListView(self.prompt_lines, bullet=" "))
@@ -154,9 +136,4 @@ class ListSelect:
             popup = Shell(_single_shell(self.title), _terminal=term)
             popup.assign("prompt", ListView(self.prompt_lines, bullet=" "))
             popup.assign("items",  MenuReturn(_to_menu_return(self.items)))
-
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup

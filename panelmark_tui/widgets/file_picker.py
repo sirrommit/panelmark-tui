@@ -42,7 +42,7 @@ import fnmatch
 from panelmark_tui import Shell
 from panelmark_tui.interactions import TextBox, StatusMessage
 from panelmark_tui.interactions.menu import MenuFunction
-from panelmark_tui.widgets._utils import _SubmittingMenu
+from panelmark_tui.widgets._utils import _ModalWidget, _SubmittingMenu
 
 
 def _shell_def(title: str) -> str:
@@ -79,7 +79,7 @@ def _apply_filter(files, pattern):
     return [e for e in files if e.name in matched]
 
 
-class FilePicker:
+class FilePicker(_ModalWidget):
     """Browse the filesystem and select a file or directory.
 
     Parameters
@@ -116,22 +116,7 @@ class FilePicker:
         self.filter = filter
         self.width = width
 
-    def show(self, parent_shell=None, **run_modal_kwargs):
-        """Display the file picker popup.
-
-        Parameters
-        ----------
-        parent_shell : Shell | None
-            If provided, the parent's display is restored when the popup
-            closes.  Pass the ``sh`` argument from a ``MenuFunction`` callback.
-        **run_modal_kwargs
-            Forwarded to ``Shell.run_modal()``.
-
-        Returns
-        -------
-        Absolute path string on Open, ``None`` on Cancel / Escape / Ctrl+Q.
-        """
-        term = parent_shell.terminal if parent_shell is not None else None
+    def _build_popup(self, term):
         popup = Shell(_shell_def(self.title), _terminal=term)
 
         # Mutable shared state — using a dict so closures can mutate it.
@@ -268,8 +253,4 @@ class FilePicker:
 
         popup.on_change("path", _on_path_change)
 
-        return popup.run_modal(
-            width=self.width,
-            parent_shell=parent_shell,
-            **run_modal_kwargs,
-        )
+        return popup
