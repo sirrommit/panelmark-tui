@@ -59,18 +59,15 @@ adds the real behaviour).
 
 ---
 
-## Phase 4 — `SubList` decision
+## Phase 4 — `SubList` decision ✅
 
-Pick one:
+Chose Option B — implement real `TreeView`.
 
-**Option A — rename and re-document (smaller)**
-- [ ] Rename `SubList` → `IndentedList` (or keep the name but update docs completely)
-- [ ] Document it accurately: accepts nested lists, renders indented, no expand/collapse
-
-**Option B — implement real `TreeView` (larger, replaces SubList story)**
-- [ ] New `TreeView` interaction: dict-based input, expand/collapse state, keyboard toggle
-- [ ] Deprecate `SubList` with a note pointing to `TreeView`
-- [ ] Add tests for expand/collapse state and keyboard navigation
+- ✅ New `TreeView` interaction (`interactions/tree_view.py`): nested-dict input,
+      expand/collapse state, keyboard toggle, `signal_return` on leaf selection
+- ✅ `SubList` deprecated with docstring note pointing to `TreeView`
+- ✅ 54 tests for expand/collapse state, keyboard navigation, rendering,
+      scroll behaviour, `set_value`, and edge cases
 
 Phase 4 is self-contained; either option can proceed independently of Phase 5.
 
@@ -152,7 +149,7 @@ Do last; there is no point polishing docs that may still change.
 |-------|-------------|-------|
 | Fill-only VSplit collapses right column | `panelmark/layout.py` | 2 |
 | Panel headings parsed but not rendered | `panelmark_tui/renderer.py` | 5 |
-| `SubList` not a real tree | `interactions/list_view.py` + docs | 4 |
+| `SubList` not a real tree | `interactions/list_view.py` + docs | ~~4~~ ✅ |
 | Paging keys missing from menus | `interactions/menu.py` + checkbox | ~~3~~ ✅ |
 | `MenuHybrid` docs wrong | `docs/interactions.md` | 1 |
 | `FilePicker` docs wrong | `docs/widgets.md` | 1 |

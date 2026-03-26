@@ -32,10 +32,7 @@ row).
 **Package:** `panelmark-tui`
 **Current behaviour:** `SubList` accepts nested lists and renders them with indentation.
 It has no expand/collapse state, no keyboard navigation, and is not focusable.
-Dict input is accepted but dict keys are used only as labels; the hierarchical structure
-implied by key→children mapping is flattened.
-**Planned fix:** Phase 4 of the roadmap — either rename to `IndentedList` and document
-accurately, or replace with a real `TreeView` widget.
+**Status:** `SubList` is deprecated.  Use `TreeView` for interactive tree navigation.
 
 ---
 

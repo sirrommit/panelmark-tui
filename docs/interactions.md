@@ -175,6 +175,10 @@ sh.update("log", current + ["New log entry"])
 
 ## SubList
 
+> **Deprecated.** `SubList` is a static indented display widget with no expand/collapse
+> and no keyboard navigation. For interactive tree browsing use
+> [`TreeView`](#treeview) instead.
+
 A display-only indented list view. Items may be nested lists; nested items are rendered
 with indentation to show hierarchy. Not focusable — updated programmatically via
 `shell.update()`.
@@ -198,10 +202,58 @@ sections = SubList([
 sh.assign("sections", sections)
 ```
 
-**Note:** `SubList` is a static flat renderer — it has no expand/collapse state and no
-keyboard navigation. For a read-only display of hierarchical data where structure is
-communicated by indentation, it works well. For interactive tree navigation, use a
-`MenuFunction` with custom item construction.
+---
+
+## TreeView
+
+An interactive, keyboard-navigable tree with expand/collapse support.
+
+```python
+TreeView(tree: dict, *, initially_expanded: bool = False)
+```
+
+`tree` is a nested dict where `None` values are **leaves** and dict values are
+**branches** with children:
+
+```python
+from panelmark_tui.interactions import TreeView
+
+tree = TreeView({
+    'Documents': {
+        'report.pdf': None,
+        'notes.txt':  None,
+    },
+    'Pictures': {
+        'photo.jpg': None,
+    },
+    'README.md': None,
+})
+sh.assign('tree', tree)
+result = sh.run()   # returns path tuple when a leaf is selected
+                    # e.g. ('Documents', 'report.pdf')
+```
+
+Pass `initially_expanded=True` to start with all branches open.
+
+**Keys:**
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Move cursor up |
+| `↓` / `j` | Move cursor down |
+| `Page Up` | Jump up one page |
+| `Page Down` | Jump down one page |
+| `Home` | Jump to first item |
+| `End` | Jump to last item |
+| `Enter` / `Space` on branch | Toggle expand/collapse |
+| `Enter` / `Space` on leaf | Select — shell exits with path tuple |
+
+**Value:** `tuple[str, ...]` — the path of the currently highlighted item,
+e.g. `('Documents', 'report.pdf')` or `('README.md',)`.  Returns `None` if
+the tree is empty.
+
+**signal_return:** fires with `(True, path_tuple)` when a leaf is activated.
+Branch toggles do not exit the shell.
 
 ---
 

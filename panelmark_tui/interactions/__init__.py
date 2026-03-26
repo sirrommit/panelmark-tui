@@ -5,6 +5,7 @@ from .checkbox import CheckBox
 from .function import Function
 from .form import FormInput
 from .status_message import StatusMessage
+from .tree_view import TreeView
 
 __all__ = [
     "MenuFunction",
@@ -17,4 +18,5 @@ __all__ = [
     "Function",
     "FormInput",
     "StatusMessage",
+    "TreeView",
 ]

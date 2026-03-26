@@ -109,6 +109,12 @@ class ListView(_Scrollable, Interaction):
 class SubList(_Scrollable, Interaction):
     """Scrollable display-only list with support for nested sublists.
 
+    .. deprecated::
+        ``SubList`` is a static indented display widget — it has no
+        expand/collapse state and no keyboard navigation.  For interactive
+        tree browsing, use :class:`~panelmark_tui.interactions.TreeView`
+        instead.
+
     Items can be plain strings or nested lists for sub-groups::
 
         SubList(['top', ['child1', 'child2'], 'bottom'])

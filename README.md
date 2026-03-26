@@ -16,7 +16,8 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | Tab / Shift+Tab focus movement | ✅ Fully working |
 | `MenuReturn`, `MenuFunction`, `MenuHybrid` | ✅ Working — up/down/j/k/Enter navigation |
 | `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` | ✅ Working |
-| `SubList` | ⚠️ Works as a **static indented list** — no expand/collapse, no tree navigation |
+| `SubList` | ⚠️ Deprecated — static indented list; use `TreeView` for interactive trees |
+| `TreeView` | ✅ Interactive collapsible tree — expand/collapse, full keyboard navigation |
 | Paging keys (Page Up/Down, Home/End) in menus | ✅ Implemented in all list interactions |
 | 7 modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
 | Panel headings (`__text__` syntax) | ⚠️ Parsed and stored, **not rendered** by this package |
@@ -31,7 +32,7 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
 | Component | Description |
 |-----------|-------------|
 | `Shell` | Full terminal event loop (fullscreen and modal) |
-| 10 interaction types | `MenuFunction`, `MenuReturn`, `MenuHybrid`, `TextBox`, `ListView`, `SubList`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` |
+| 11 interaction types | `MenuFunction`, `MenuReturn`, `MenuHybrid`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView` |
 | 7 modal widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress` |
 | Testing utilities | `MockTerminal`, `make_key` for test suites that don't need a real terminal |
 
