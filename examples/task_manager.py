@@ -30,6 +30,7 @@ from panelmark_tui.interactions import (
     FormInput,
     ListView,
     MenuFunction,
+    MenuHybrid,
     StatusMessage,
 )
 from panelmark_tui.widgets import (
@@ -81,6 +82,9 @@ TASKS = [
 # Active filter / sort state (mutated by callbacks)
 _filter_tags = set()       # empty = show all
 _sort_key    = "priority"  # "priority" | "status" | "due" | "title"
+
+# Currently-selected task (mutated by callbacks)
+_state = {"current_task": None}
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -149,23 +153,19 @@ def _rebuild_task_menu(sh, select_title=None):
 
     # Re-select the task that was active before the rebuild.
     if select_title:
-        labels = list(callbacks.keys())
-        for i, lbl in enumerate(labels):
-            task = visible[i] if i < len(visible) else None
-            if task and task["title"] == select_title:
-                interaction = sh._interactions["tasks"]
-                interaction._active_index = i
-                interaction._clamp_scroll()
+        for i, task in enumerate(visible):
+            if task["title"] == select_title:
+                sh.update("tasks", _task_label(task))
                 break
 
 
 def _show_detail(sh, task):
     sh.update("detail", _task_details(task))
-    sh._current_task = task     # stash for other callbacks to read
+    _state["current_task"] = task
 
 
 def _current_task(sh):
-    return getattr(sh, "_current_task", None)
+    return _state["current_task"]
 
 
 # ── Action callbacks ──────────────────────────────────────────────────────────
@@ -307,7 +307,7 @@ def _delete_task(sh):
 
     if ok:
         TASKS.remove(task)
-        sh._current_task = None
+        _state["current_task"] = None
         sh.update("detail", ["(select a task to see details)"])
         _rebuild_task_menu(sh)
         sh.update("status", ("success", "Task deleted."))
@@ -362,19 +362,6 @@ def _sort_tasks(sh):
     _rebuild_task_menu(sh)
     sh.update("status", ("info", f"Sorted by {choice}."))
 
-
-def _quit(sh):
-    """Show a confirmation dialog; if confirmed, signal the shell to exit."""
-    ok = Confirm(
-        title         = "Quit",
-        message_lines = ["Exit Task Manager?"],
-        buttons       = {"Quit": True, "Cancel": False},
-    ).show(parent_shell=sh)
-    if ok:
-        # Setting _wants_exit=True here is read by signal_return() after this
-        # callback returns, causing the shell event loop to exit cleanly.
-        sh._interactions["actions"]._wants_exit = True
-        sh._interactions["actions"]._exit_value = None
 
 
 def _export_tasks(sh):
@@ -443,9 +430,21 @@ LAYOUT = """
 def main():
     sh = Shell(LAYOUT)
 
-    # Action bar.  All items are callables.  _quit() sets _wants_exit after
-    # the user confirms, which signal_return() reads once the callback returns.
-    sh.assign("actions", MenuFunction({
+    # _quit is defined here so it can capture actions_menu by closure.
+    # MenuHybrid.signal_return() checks _wants_exit after each callback
+    # returns, so setting it inside the callback exits the shell cleanly.
+    def _quit(sh):
+        """Show a confirmation dialog; if confirmed, signal the shell to exit."""
+        ok = Confirm(
+            title         = "Quit",
+            message_lines = ["Exit Task Manager?"],
+            buttons       = {"Quit": True, "Cancel": False},
+        ).show(parent_shell=sh)
+        if ok:
+            actions_menu._wants_exit = True
+            actions_menu._exit_value = None
+
+    actions_menu = MenuHybrid({
         "Add":    _add_task,
         "Edit":   _edit_task,
         "Delete": _delete_task,
@@ -453,7 +452,8 @@ def main():
         "Sort":   _sort_tasks,
         "Export": _export_tasks,
         "Quit":   _quit,
-    }))
+    })
+    sh.assign("actions", actions_menu)
 
     # Task list.
     _rebuild_task_menu(sh)
