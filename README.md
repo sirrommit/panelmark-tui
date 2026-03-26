@@ -19,7 +19,11 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | `SubList` | ⚠️ Deprecated — static indented list; use `TreeView` for interactive trees |
 | `TreeView` | ✅ Interactive collapsible tree — expand/collapse, full keyboard navigation |
 | Paging keys (Page Up/Down, Home/End) in menus | ✅ Implemented in all list interactions |
-| 7 modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
+| 7 classic modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
+| `RadioList` interaction | ✅ Single-select with `(●)` / `( )` visuals; returns value on Enter/Space |
+| `TableView` interaction | ✅ Multi-column display table; sticky header; scrollable; focusable |
+| `Toast` widget | ✅ Transient overlay notification; auto-dismisses after timeout or keypress |
+| `Spinner` widget | ✅ Indeterminate-progress popup; animated braille frames; cancellable |
 | Panel headings (`__text__` syntax) | ✅ Rendered as `├─── Heading ───┤` at top of panel content area |
 | Equal-width fill splits (all fill-width columns) | ✅ Columns share space equally (differ by at most 1 char) |
 
@@ -32,8 +36,8 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
 | Component | Description |
 |-----------|-------------|
 | `Shell` | Full terminal event loop (fullscreen and modal) |
-| 11 interaction types | `MenuFunction`, `MenuReturn`, `MenuHybrid`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView` |
-| 7 modal widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress` |
+| 13 interaction types | `MenuFunction`, `MenuReturn`, `MenuHybrid`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
+| 9 modal widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`, `Toast`, `Spinner` |
 | Testing utilities | `MockTerminal`, `make_key` for test suites that don't need a real terminal |
 
 ---

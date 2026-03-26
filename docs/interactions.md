@@ -1,6 +1,6 @@
 # Built-in Interactions
 
-panelmark-tui provides 10 built-in interaction types, all importable from
+panelmark-tui provides 12 built-in interaction types, all importable from
 `panelmark_tui.interactions`.
 
 ```python
@@ -12,6 +12,8 @@ from panelmark_tui.interactions import (
     Function,
     FormInput,
     StatusMessage,
+    RadioList,
+    TableView,
 )
 ```
 
@@ -305,6 +307,85 @@ sh.assign("priority", priority)
 full page; `Home`/`End` to jump to the first/last item; `Space` or `Enter` to toggle.
 
 **Value:** `dict[str, bool]` — label → checked state for all items.
+
+---
+
+## RadioList
+
+A single-select list with radio-button visuals (`(●)` / `( )`).  The cursor
+position *is* the selection — moving the cursor immediately changes which item
+shows `(●)`.  Pressing `Enter` or `Space` accepts the current selection and
+causes the shell to exit with the selected **value** (not the label).
+
+A cleaner alternative to `CheckBox(mode="single")` when the items map to
+meaningful return values.
+
+```python
+RadioList(items: dict)
+```
+
+`items` maps display labels to return values.
+
+```python
+from panelmark_tui.interactions import RadioList
+
+sh.assign("size", RadioList({
+    "Small":  "s",
+    "Medium": "m",
+    "Large":  "l",
+}))
+result = sh.run()   # returns "s", "m", or "l"
+```
+
+**Keys:** `↑`/`↓` or `k`/`j` to navigate; `Page Up`/`Page Down` to jump by a
+full page; `Home`/`End` to jump to the first/last item; `Enter` or `Space` to
+accept.
+
+**`get_value()`:** returns the **value** of the currently selected item.
+
+**`set_value(value)`:** moves the cursor to the item with the given value.
+
+**`signal_return()`:** returns `(True, value)` after `Enter` or `Space` is
+pressed.
+
+---
+
+## TableView
+
+A multi-column read-only display table.  Renders a sticky header row followed
+by scrollable data rows.  Active row is highlighted when focused.
+
+```python
+TableView(columns: list, rows: list)
+```
+
+- `columns` — `[(header_label, width_in_chars), ...]`
+- `rows` — list of rows; each row is a list of values (converted via `str()`)
+
+Columns are rendered exactly `width_in_chars` characters wide and separated by
+`│`.
+
+```python
+from panelmark_tui.interactions import TableView
+
+sh.assign("results", TableView(
+    columns=[("Name", 20), ("Status", 10), ("Score", 6)],
+    rows=[
+        ["Alice",   "active", "95"],
+        ["Bob",     "idle",   "72"],
+        ["Charlie", "active", "88"],
+    ],
+))
+```
+
+**Keys:** `↑`/`↓` or `k`/`j` to move the active row; `Page Up`/`Page Down` to
+jump by one page; `Home`/`End` to jump to the first/last row.
+
+**`get_value()`:** returns the 0-based active row index.
+
+**`set_value(index)`:** moves the cursor to the given row index (clamped).
+
+**Focusable:** `True` — assign to a region that can receive keyboard focus.
 
 ---
 

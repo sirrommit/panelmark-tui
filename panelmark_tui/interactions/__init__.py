@@ -6,6 +6,8 @@ from .function import Function
 from .form import FormInput
 from .status_message import StatusMessage
 from .tree_view import TreeView
+from .radio_list import RadioList
+from .table_view import TableView
 
 __all__ = [
     "MenuFunction",
@@ -19,4 +21,6 @@ __all__ = [
     "FormInput",
     "StatusMessage",
     "TreeView",
+    "RadioList",
+    "TableView",
 ]

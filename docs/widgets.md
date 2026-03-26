@@ -1,19 +1,20 @@
 # Modal Widgets
 
-panelmark-tui includes seven ready-made modal widgets. Each is a pre-built `Shell` with a
+panelmark-tui includes nine ready-made modal widgets. Each is a pre-built `Shell` with a
 fixed layout, sensible defaults, and a simple `.show()` method that blocks until the user
 makes a choice.
 
 All widgets:
 - Are auto-centred on screen by default
 - Restore the parent shell's display after closing
-- Return `None` on Escape or Ctrl+Q (except `Progress`)
+- Return `None` on Escape or Ctrl+Q (except `Progress`, `Toast`, `Spinner`)
 - Accept `parent_shell=sh` to integrate with a running TUI
 
 ```python
 from panelmark_tui.widgets import (
     Confirm, Alert, InputPrompt,
-    ListSelect, FilePicker, DatePicker, Progress,
+    ListSelect, FilePicker, DatePicker,
+    Progress, Toast, Spinner,
 )
 ```
 
@@ -309,6 +310,84 @@ with Progress(title="Importing data", total=len(records)).show(sh) as prog:
   render cycle so that `set_progress()` can push updates synchronously without waiting
   for a keypress.
 - The bar renders as `[████████░░░░░░] 55%` using Unicode block characters.
+
+---
+
+## Toast
+
+Transient overlay notification that auto-dismisses after a configurable timeout
+or on any keypress.  Useful when there is no `$status$` region in the current
+shell.
+
+```python
+Toast(
+    message: str,
+    title: str = "Notice",
+    duration: float = 2.0,
+    width: int = 40,
+)
+```
+
+```python
+from panelmark_tui.widgets import Toast
+
+def handle_save(sh):
+    save_file()
+    Toast(message="File saved!", duration=1.5).show(parent_shell=sh)
+```
+
+**Returns:** `None` always.
+
+**Layout:** title border, 1-row message, bottom border.
+**Height:** 3 rows (fixed).
+
+**Notes:**
+- Dismisses after `duration` seconds **or** on the first keypress, whichever
+  comes first.
+- Does not wait for any specific key — any key press dismisses.
+
+---
+
+## Spinner
+
+Indeterminate-progress popup for operations with no known total.  Like
+`Progress` but shows an animated spinner instead of a fill bar.
+
+```python
+Spinner(
+    title: str = "Working…",
+    cancellable: bool = True,
+    width: int = 50,
+)
+```
+
+**Usage — context manager:**
+
+```python
+from panelmark_tui.widgets import Spinner
+
+def do_work(sh):
+    with Spinner(title="Scanning…").show(parent_shell=sh) as spin:
+        for path in paths:
+            scan(path)
+            spin.tick(f"Scanning {path}")
+            if spin.cancelled:
+                break
+```
+
+**`_SpinnerHandle` API** (the object yielded by the context manager):
+
+| Method / Property | Description |
+|-------------------|-------------|
+| `spin.tick(message="")` | Advance animation frame; optionally update status text |
+| `spin.cancelled` | `True` if the user pressed Escape, Ctrl+Q, or Cancel |
+
+**Returns:** `None` always (use `spin.cancelled` to check for cancellation).
+
+**Layout:** spinner row, separator, Cancel button (if `cancellable=True`).
+**Height:** 4 rows (non-cancellable) or 6 rows (cancellable).
+
+**Animation:** Braille spinner frames (`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`), 10 distinct frames.
 
 ---
 

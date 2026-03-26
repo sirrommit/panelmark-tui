@@ -85,17 +85,18 @@ Phase 4 is self-contained; either option can proceed independently of Phase 5.
 
 ---
 
-## Phase 6 — New widgets
+## Phase 6 — New widgets ✅
 
-Add in this order (each is independent):
-
-- [ ] **`RadioList`**: single-select, cleaner API than `CheckBox(mode="single")`.
-      `CheckBox(mode="single")` may stay as an alias or be deprecated.
-- [ ] **`TableView`**: multi-column read-only display.  Column definitions, aligned
-      rendering, scrollable.
-- [ ] **`Toast`**: transient overlay notification, auto-dismiss after N seconds.
-      Useful complement to `StatusMessage` when there is no status region.
-- [ ] **`Spinner`**: indeterminate progress.  Variant of `Progress` without a known total.
+- ✅ **`RadioList`** (`interactions/radio_list.py`): `{label: value}` API; cursor=selection;
+      `(●)` / `( )` markers; Enter/Space returns value; full page nav; 24 tests
+- ✅ **`TableView`** (`interactions/table_view.py`): `(columns, rows)` API; sticky header;
+      `│`-separated columns; scrollable; focusable; 22 tests
+- ✅ **`Toast`** (`widgets/toast.py`): 3-row overlay; auto-dismisses after `duration` sec
+      or any keypress; restores parent; 4 tests
+- ✅ **`Spinner`** (`widgets/spinner.py`): braille-frame animation; `tick(message)`;
+      cancellable via Escape/Ctrl+Q/Cancel button; 14 tests
+- ✅ `CheckBox(mode="single")` kept as-is (no deprecation needed — different value shape)
+- ✅ Updated `docs/interactions.md`, `docs/widgets.md`, `README.md`
 
 Defer to a later phase:
 - `TextAreaPrompt` — multiline input modal (needs design)
