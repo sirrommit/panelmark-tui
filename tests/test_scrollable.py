@@ -5,6 +5,7 @@ import pytest
 from panelmark_tui.testing import make_key
 from panelmark_tui.interactions import MenuFunction, MenuReturn, MenuHybrid, CheckBox
 from panelmark_tui.interactions.list_view import ListView, SubList
+from panelmark_tui.interactions.scrollable import _list_nav
 from panelmark.draw import RenderContext, WriteCmd, FillCmd
 
 
@@ -286,3 +287,227 @@ class TestSubListScroll:
         texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
         assert not any('Item 0' in t for t in texts)
         assert any('Item 3' in t for t in texts)
+
+
+# ---------------------------------------------------------------------------
+# _list_nav unit tests
+# ---------------------------------------------------------------------------
+
+class TestListNav:
+    def test_up_arrow_decrements(self):
+        assert _list_nav('KEY_UP', 3, 10, 5) == 2
+
+    def test_down_arrow_increments(self):
+        assert _list_nav('KEY_DOWN', 3, 10, 5) == 4
+
+    def test_k_decrements(self):
+        assert _list_nav('k', 5, 10, 4) == 4
+
+    def test_j_increments(self):
+        assert _list_nav('j', 5, 10, 4) == 6
+
+    def test_up_clamps_at_zero(self):
+        assert _list_nav('KEY_UP', 0, 10, 5) == 0
+
+    def test_down_clamps_at_last(self):
+        assert _list_nav('KEY_DOWN', 9, 10, 5) == 9
+
+    def test_page_up_jumps_back(self):
+        assert _list_nav('KEY_PPAGE', 8, 10, 3) == 5
+
+    def test_page_down_jumps_forward(self):
+        assert _list_nav('KEY_NPAGE', 2, 10, 3) == 5
+
+    def test_page_up_clamps_at_zero(self):
+        assert _list_nav('KEY_PPAGE', 1, 10, 5) == 0
+
+    def test_page_down_clamps_at_last(self):
+        assert _list_nav('KEY_NPAGE', 8, 10, 5) == 9
+
+    def test_home_returns_zero(self):
+        assert _list_nav('KEY_HOME', 7, 10, 5) == 0
+
+    def test_end_returns_last(self):
+        assert _list_nav('KEY_END', 0, 10, 5) == 9
+
+    def test_unhandled_key_returns_none(self):
+        assert _list_nav('KEY_ENTER', 2, 10, 5) is None
+        assert _list_nav(' ', 2, 10, 5) is None
+        assert _list_nav('x', 2, 10, 5) is None
+
+    def test_empty_list_returns_none(self):
+        assert _list_nav('KEY_DOWN', 0, 0, 5) is None
+
+
+# ---------------------------------------------------------------------------
+# Paging keys in MenuReturn
+# ---------------------------------------------------------------------------
+
+class TestMenuReturnPaging:
+    def test_page_down_advances_by_page(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        m.handle_key('KEY_NPAGE')
+        assert m._active_index == 5
+
+    def test_page_up_retreats_by_page(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        for _ in range(10):
+            m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_PPAGE')
+        assert m._active_index == 5
+
+    def test_home_jumps_to_first(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        for _ in range(15):
+            m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_HOME')
+        assert m._active_index == 0
+        assert m._scroll_offset == 0
+
+    def test_end_jumps_to_last(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        m.handle_key('KEY_END')
+        assert m._active_index == 19
+
+    def test_page_down_clamps_at_last(self):
+        m = MenuReturn(make_labels(5))
+        prime(m, 5)
+        m.handle_key('KEY_NPAGE')
+        assert m._active_index == 4
+
+    def test_page_up_clamps_at_first(self):
+        m = MenuReturn(make_labels(5))
+        prime(m, 5)
+        m.handle_key('KEY_PPAGE')
+        assert m._active_index == 0
+
+    def test_active_visible_after_page_down(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        m.handle_key('KEY_NPAGE')
+        assert m._active_index - m._scroll_offset < 5
+
+    def test_active_visible_after_end(self):
+        m = MenuReturn(make_labels(20))
+        prime(m, 5)
+        m.handle_key('KEY_END')
+        assert m._active_index - m._scroll_offset < 5
+
+
+# ---------------------------------------------------------------------------
+# Paging keys in MenuFunction
+# ---------------------------------------------------------------------------
+
+class TestMenuFunctionPaging:
+    def test_page_down_advances(self):
+        items = {f'A{i}': lambda s: None for i in range(20)}
+        m = MenuFunction(items)
+        prime(m, 5)
+        m.handle_key('KEY_NPAGE')
+        assert m._active_index == 5
+
+    def test_home_resets(self):
+        items = {f'A{i}': lambda s: None for i in range(20)}
+        m = MenuFunction(items)
+        prime(m, 5)
+        for _ in range(10):
+            m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_HOME')
+        assert m._active_index == 0
+
+    def test_end_jumps_to_last(self):
+        items = {f'A{i}': lambda s: None for i in range(20)}
+        m = MenuFunction(items)
+        prime(m, 5)
+        m.handle_key('KEY_END')
+        assert m._active_index == 19
+
+
+# ---------------------------------------------------------------------------
+# Paging keys in MenuHybrid
+# ---------------------------------------------------------------------------
+
+class TestMenuHybridPaging:
+    def test_page_down_advances(self):
+        items = {f'I{i}': i for i in range(20)}
+        m = MenuHybrid(items)
+        prime(m, 5)
+        m.handle_key('KEY_NPAGE')
+        assert m._active_index == 5
+
+    def test_home_resets(self):
+        items = {f'I{i}': i for i in range(20)}
+        m = MenuHybrid(items)
+        prime(m, 5)
+        for _ in range(15):
+            m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_HOME')
+        assert m._active_index == 0
+
+    def test_end_jumps_to_last(self):
+        items = {f'I{i}': i for i in range(20)}
+        m = MenuHybrid(items)
+        prime(m, 5)
+        m.handle_key('KEY_END')
+        assert m._active_index == 19
+
+
+# ---------------------------------------------------------------------------
+# Paging keys in CheckBox
+# ---------------------------------------------------------------------------
+
+class TestCheckBoxPaging:
+    def test_page_down_advances(self):
+        items = {f'Opt {i}': False for i in range(20)}
+        c = CheckBox(items)
+        prime(c, 5)
+        c.handle_key('KEY_NPAGE')
+        assert c._active_index == 5
+
+    def test_page_up_retreats(self):
+        items = {f'Opt {i}': False for i in range(20)}
+        c = CheckBox(items)
+        prime(c, 5)
+        for _ in range(10):
+            c.handle_key('KEY_DOWN')
+        c.handle_key('KEY_PPAGE')
+        assert c._active_index == 5
+
+    def test_home_resets(self):
+        items = {f'Opt {i}': False for i in range(20)}
+        c = CheckBox(items)
+        prime(c, 5)
+        for _ in range(15):
+            c.handle_key('KEY_DOWN')
+        c.handle_key('KEY_HOME')
+        assert c._active_index == 0
+
+    def test_end_jumps_to_last(self):
+        items = {f'Opt {i}': False for i in range(20)}
+        c = CheckBox(items)
+        prime(c, 5)
+        c.handle_key('KEY_END')
+        assert c._active_index == 19
+
+    def test_paging_returns_false_changed(self):
+        """CheckBox navigation never marks value as changed."""
+        items = {f'O{i}': False for i in range(10)}
+        c = CheckBox(items)
+        prime(c, 5)
+        changed, _ = c.handle_key('KEY_NPAGE')
+        assert changed is False
+        changed, _ = c.handle_key('KEY_HOME')
+        assert changed is False
+        changed, _ = c.handle_key('KEY_END')
+        assert changed is False
+
+    def test_active_visible_after_page_down(self):
+        items = {f'Opt {i}': False for i in range(20)}
+        c = CheckBox(items)
+        prime(c, 5)
+        c.handle_key('KEY_NPAGE')
+        assert c._active_index - c._scroll_offset < 5

@@ -17,7 +17,7 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | `MenuReturn`, `MenuFunction`, `MenuHybrid` | ✅ Working — up/down/j/k/Enter navigation |
 | `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` | ✅ Working |
 | `SubList` | ⚠️ Works as a **static indented list** — no expand/collapse, no tree navigation |
-| Paging keys (Page Up/Down, Home/End) in menus | ❌ Not yet implemented |
+| Paging keys (Page Up/Down, Home/End) in menus | ✅ Implemented in all list interactions |
 | 7 modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
 | Panel headings (`__text__` syntax) | ⚠️ Parsed and stored, **not rendered** by this package |
 | Equal-width fill splits (all fill-width columns) | ✅ Columns share space equally (differ by at most 1 char) |

@@ -41,7 +41,8 @@ sh.assign("menu", menu)
 result = sh.run()    # returns "new", "open", "save", or "quit"
 ```
 
-**Keys:** `↑`/`↓` or `k`/`j` to navigate, `Enter` to select.
+**Keys:** `↑`/`↓` or `k`/`j` to navigate one item; `Page Up`/`Page Down` to jump by a
+full page; `Home`/`End` to jump to the first/last item; `Enter` to select.
 
 **Value:** the dict value mapped to the selected label (or the label itself if you pass a
 list to convert via `{item: item for item in items}`).
@@ -76,7 +77,7 @@ menu = MenuFunction({
 sh.assign("menu", menu)
 ```
 
-**Keys:** same navigation as `MenuReturn`.
+**Keys:** same navigation as `MenuReturn` (including `Page Up`/`Page Down`/`Home`/`End`).
 
 ---
 
@@ -107,7 +108,7 @@ menu = MenuHybrid({
 result = sh.run()   # returns "quit" when Quit is selected
 ```
 
-**Keys:** same navigation as `MenuReturn`.
+**Keys:** same navigation as `MenuReturn` (including `Page Up`/`Page Down`/`Home`/`End`).
 
 ---
 
@@ -248,7 +249,8 @@ priority = CheckBox({
 sh.assign("priority", priority)
 ```
 
-**Keys:** `↑`/`↓` or `k`/`j` to navigate; `Space` or `Enter` to toggle.
+**Keys:** `↑`/`↓` or `k`/`j` to navigate one item; `Page Up`/`Page Down` to jump by a
+full page; `Home`/`End` to jump to the first/last item; `Space` or `Enter` to toggle.
 
 **Value:** `dict[str, bool]` — label → checked state for all items.
 
@@ -384,11 +386,19 @@ sh.update("status", None)   # clear
 ## Scrolling behaviour
 
 `MenuReturn`, `MenuFunction`, `MenuHybrid`, and `CheckBox` all inherit from
-`_ScrollableList`, which provides automatic scroll tracking:
+`_ScrollableList`, which provides automatic scroll tracking.
 
-- The scroll offset advances when the active item moves below the visible viewport
-- The scroll offset decreases when the active item moves above the visible viewport
-- Scroll offset is adjusted on every `render()` call
+**Navigation keys supported by all four:**
 
-The scroll state uses the height from the most recent `render()` call, so interactions
-correctly track the viewport even if the terminal is resized.
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Move up one item |
+| `↓` / `j` | Move down one item |
+| `Page Up` | Jump up by one full page (viewport height) |
+| `Page Down` | Jump down by one full page |
+| `Home` | Jump to the first item |
+| `End` | Jump to the last item |
+
+The scroll offset is kept in sync automatically: the viewport always contains the active
+item. It is updated on every `render()` call, so the interaction correctly tracks the
+viewport even if the terminal is resized.

@@ -1,5 +1,5 @@
 from panelmark.draw import DrawCommand, RenderContext
-from .scrollable import _ScrollableList
+from .scrollable import _ScrollableList, _list_nav
 
 
 class MenuFunction(_ScrollableList):
@@ -23,27 +23,13 @@ class MenuFunction(_ScrollableList):
         return self._build_rows(viewport, context, focused)
 
     def handle_key(self, key) -> tuple:
-        if key.startswith("KEY_"):
-            name = key
-            if name in ('KEY_UP', 'KEY_SUP') or key == 'k':
-                self._active_index = max(0, self._active_index - 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name in ('KEY_DOWN', 'KEY_SDOWN') or key == 'j':
-                self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name == 'KEY_ENTER':
-                return self._activate()
-        elif key == 'k':
-            self._active_index = max(0, self._active_index - 1)
+        new_idx = _list_nav(key, self._active_index, len(self._labels),
+                            self._last_height)
+        if new_idx is not None:
+            self._active_index = new_idx
             self._clamp_scroll()
             return True, self.get_value()
-        elif key == 'j':
-            self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-            self._clamp_scroll()
-            return True, self.get_value()
-        elif key == '\n' or key == '\r':
+        if key == 'KEY_ENTER' or key in ('\n', '\r'):
             return self._activate()
         return False, self.get_value()
 
@@ -91,27 +77,13 @@ class MenuReturn(_ScrollableList):
 
     def handle_key(self, key) -> tuple:
         self._wants_exit = False
-        if key.startswith("KEY_"):
-            name = key
-            if name in ('KEY_UP',):
-                self._active_index = max(0, self._active_index - 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name in ('KEY_DOWN',):
-                self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name == 'KEY_ENTER':
-                return self._select()
-        elif key == 'k':
-            self._active_index = max(0, self._active_index - 1)
+        new_idx = _list_nav(key, self._active_index, len(self._labels),
+                            self._last_height)
+        if new_idx is not None:
+            self._active_index = new_idx
             self._clamp_scroll()
             return True, self.get_value()
-        elif key == 'j':
-            self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-            self._clamp_scroll()
-            return True, self.get_value()
-        elif key == '\n' or key == '\r':
+        if key == 'KEY_ENTER' or key in ('\n', '\r'):
             return self._select()
         return False, self.get_value()
 
@@ -163,27 +135,13 @@ class MenuHybrid(_ScrollableList):
 
     def handle_key(self, key) -> tuple:
         self._wants_exit = False
-        if key.startswith("KEY_"):
-            name = key
-            if name in ('KEY_UP',):
-                self._active_index = max(0, self._active_index - 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name in ('KEY_DOWN',):
-                self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-                self._clamp_scroll()
-                return True, self.get_value()
-            elif name == 'KEY_ENTER':
-                return self._activate()
-        elif key == 'k':
-            self._active_index = max(0, self._active_index - 1)
+        new_idx = _list_nav(key, self._active_index, len(self._labels),
+                            self._last_height)
+        if new_idx is not None:
+            self._active_index = new_idx
             self._clamp_scroll()
             return True, self.get_value()
-        elif key == 'j':
-            self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-            self._clamp_scroll()
-            return True, self.get_value()
-        elif key == '\n' or key == '\r':
+        if key == 'KEY_ENTER' or key in ('\n', '\r'):
             return self._activate()
         return False, self.get_value()
 

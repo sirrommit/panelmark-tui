@@ -27,14 +27,6 @@ row).
 
 ## Interactions
 
-### Paging keys are not implemented in menu interactions
-
-**Package:** `panelmark-tui`
-**Affected interactions:** `MenuReturn`, `MenuFunction`, `MenuHybrid`, `CheckBox`
-**Current behaviour:** Only `↑`/`↓` (and `k`/`j`) and `Enter` are handled.
-Page Up, Page Down, Home, and End do nothing.
-**Planned fix:** Phase 3 of the roadmap.
-
 ### `SubList` is a static indented list, not a tree
 
 **Package:** `panelmark-tui`

@@ -1,6 +1,6 @@
 from typing import Literal
 from panelmark.draw import DrawCommand, RenderContext
-from .scrollable import _ScrollableList
+from .scrollable import _ScrollableList, _list_nav
 
 
 class CheckBox(_ScrollableList):
@@ -31,30 +31,14 @@ class CheckBox(_ScrollableList):
         return self._build_rows(viewport, context, focused, active_marker=False)
 
     def handle_key(self, key) -> tuple:
-        if key.startswith("KEY_"):
-            name = key
-            if name == 'KEY_UP':
-                self._active_index = max(0, self._active_index - 1)
-                self._clamp_scroll()
-                return False, self.get_value()
-            elif name == 'KEY_DOWN':
-                self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-                self._clamp_scroll()
-                return False, self.get_value()
-            elif name in ('KEY_ENTER',):
-                return self._toggle()
-        else:
-            char = key
-            if char == 'k':
-                self._active_index = max(0, self._active_index - 1)
-                self._clamp_scroll()
-                return False, self.get_value()
-            elif char == 'j':
-                self._active_index = min(len(self._labels) - 1, self._active_index + 1)
-                self._clamp_scroll()
-                return False, self.get_value()
-            elif char == ' ':
-                return self._toggle()
+        new_idx = _list_nav(key, self._active_index, len(self._labels),
+                            self._last_height)
+        if new_idx is not None:
+            self._active_index = new_idx
+            self._clamp_scroll()
+            return False, self.get_value()
+        if key in ('KEY_ENTER', ' '):
+            return self._toggle()
         return False, self.get_value()
 
     def _toggle(self):

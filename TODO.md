@@ -45,17 +45,17 @@ Items marked ✅ are already done.
 
 ---
 
-## Phase 3 — Missing navigation keys
+## Phase 3 — Missing navigation keys ✅
 
 Goal: menus and lists behave as documented (after Phase 1 removes the false claims, Phase 3
 adds the real behaviour).
 
-- [ ] **`MenuReturn` / `MenuFunction` / `MenuHybrid`** (`interactions/menu.py`): add
+- ✅ **`MenuReturn` / `MenuFunction` / `MenuHybrid`** (`interactions/menu.py`): add
       Page Up, Page Down, Home, End
-- [ ] **`CheckBox`** (`interactions/checkbox.py`): add Page Up, Page Down, Home, End
-- [ ] Extract shared keymap helper (`_scroll_delta(key)` or similar) so all list interactions
-      use the same nav logic — see SUGGESTIONS.md "shared keymap helpers"
-- [ ] Update interaction docs to document the now-real paging keys
+- ✅ **`CheckBox`** (`interactions/checkbox.py`): add Page Up, Page Down, Home, End
+- ✅ Extracted `_list_nav(key, active, total, page_size)` helper in `scrollable.py` —
+      all list interactions share the same nav logic
+- ✅ Updated interaction docs to document the now-real paging keys
 
 ---
 
@@ -153,7 +153,7 @@ Do last; there is no point polishing docs that may still change.
 | Fill-only VSplit collapses right column | `panelmark/layout.py` | 2 |
 | Panel headings parsed but not rendered | `panelmark_tui/renderer.py` | 5 |
 | `SubList` not a real tree | `interactions/list_view.py` + docs | 4 |
-| Paging keys missing from menus | `interactions/menu.py` + checkbox | 3 |
+| Paging keys missing from menus | `interactions/menu.py` + checkbox | ~~3~~ ✅ |
 | `MenuHybrid` docs wrong | `docs/interactions.md` | 1 |
 | `FilePicker` docs wrong | `docs/widgets.md` | 1 |
 | `_terminal` kwarg doesn't exist | `docs/testing.md` | 1 |

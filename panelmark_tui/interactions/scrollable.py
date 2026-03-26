@@ -53,6 +53,41 @@ from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd
 
 
 # ---------------------------------------------------------------------------
+# Shared navigation helper
+# ---------------------------------------------------------------------------
+
+def _list_nav(key: str, active: int, total: int, page_size: int):
+    """Map a navigation key to a new active index.
+
+    Handles up/down (arrow keys and vi keys), page up/down, home, and end.
+    Returns the new index (clamped to ``[0, total-1]``), or ``None`` if the
+    key is not a navigation key.
+
+    Parameters
+    ----------
+    key:        The raw key string from ``handle_key``.
+    active:     Current active (cursor) index.
+    total:      Total number of items in the list.
+    page_size:  Viewport height — used as the page-up/down step size.
+    """
+    if total == 0:
+        return None
+    if key in ('KEY_UP', 'KEY_SUP') or key == 'k':
+        return max(0, active - 1)
+    if key in ('KEY_DOWN', 'KEY_SDOWN') or key == 'j':
+        return min(total - 1, active + 1)
+    if key == 'KEY_PPAGE':                          # Page Up
+        return max(0, active - max(1, page_size))
+    if key == 'KEY_NPAGE':                          # Page Down
+        return min(total - 1, active + max(1, page_size))
+    if key == 'KEY_HOME':
+        return 0
+    if key == 'KEY_END':
+        return total - 1
+    return None
+
+
+# ---------------------------------------------------------------------------
 # _Scrollable — pure scroll-state mixin
 # ---------------------------------------------------------------------------
 
