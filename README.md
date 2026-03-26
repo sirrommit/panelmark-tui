@@ -6,6 +6,26 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 
 ---
 
+## What is real today
+
+| Category | Status |
+|----------|--------|
+| Shell layout (ASCII-art DSL) | ✅ Fully working |
+| Fullscreen event loop (`Shell.run()`) | ✅ Fully working |
+| Modal overlay (`Shell.run_modal()`) | ✅ Fully working |
+| Tab / Shift+Tab focus movement | ✅ Fully working |
+| `MenuReturn`, `MenuFunction`, `MenuHybrid` | ✅ Working — up/down/j/k/Enter navigation |
+| `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` | ✅ Working |
+| `SubList` | ⚠️ Works as a **static indented list** — no expand/collapse, no tree navigation |
+| Paging keys (Page Up/Down, Home/End) in menus | ❌ Not yet implemented |
+| 7 modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
+| Panel headings (`__text__` syntax) | ⚠️ Parsed and stored, **not rendered** by this package |
+| Equal-width fill splits (`\|{$a$}\|\|{$b$}\|` when both are fill-width) | ❌ Not yet — left column takes all space |
+
+See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
+
+---
+
 ## What it provides
 
 | Component | Description |

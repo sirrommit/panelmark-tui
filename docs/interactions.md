@@ -41,8 +41,7 @@ sh.assign("menu", menu)
 result = sh.run()    # returns "new", "open", "save", or "quit"
 ```
 
-**Keys:** `↑`/`↓` or `k`/`j` to navigate, `Enter` to select, `Page Up`/`Page Down`
-for larger jumps, `Home`/`End` to jump to first/last item.
+**Keys:** `↑`/`↓` or `k`/`j` to navigate, `Enter` to select.
 
 **Value:** the dict value mapped to the selected label (or the label itself if you pass a
 list to convert via `{item: item for item in items}`).
@@ -83,24 +82,32 @@ sh.assign("menu", menu)
 
 ## MenuHybrid
 
-A scrollable menu that **both** calls a callback **and** returns a value. Useful when you
-need side effects (like updating another region) and also want the shell to exit on
-selection.
+A scrollable menu where each item is either a **callable** or a **plain value**.
 
 ```python
 MenuHybrid(items: dict)
 ```
 
-`items` maps labels to `(callback, return_value)` tuples.
+- If the selected item's value is **callable**, it is called as `callback(shell)` and the
+  shell continues running. Use this for items with side effects.
+- If the selected item's value is **not callable**, the shell exits and `shell.run()`
+  returns that value. Use this for items that should close the shell.
 
 ```python
 from panelmark_tui.interactions import MenuHybrid
 
+def say_hello(sh):
+    sh.update("status", ("success", "Hello!"))
+
 menu = MenuHybrid({
-    "Yes": (lambda sh: sh.update("status", ("success", "Confirmed")), True),
-    "No":  (lambda sh: sh.update("status", ("info",    "Cancelled")), False),
+    "Say Hello": say_hello,   # callable → runs, stays open
+    "About":     show_about,  # callable → runs, stays open
+    "Quit":      "quit",      # plain value → shell.run() returns "quit"
 })
+result = sh.run()   # returns "quit" when Quit is selected
 ```
+
+**Keys:** same navigation as `MenuReturn`.
 
 ---
 
@@ -134,7 +141,7 @@ sh.assign("display", display)
 ```
 
 **Keys:** printable characters to type; `Backspace`/`Delete` to erase; `←`/`→` to move
-cursor; `Home`/`End` to jump to line start/end; `Enter` to insert newline (except
+cursor; `Home`/`End` to jump to buffer start/end; `Enter` to insert newline (except
 `readonly=True`).
 
 **Value:** `str` — the full text content including any newlines.
@@ -167,39 +174,51 @@ sh.update("log", current + ["New log entry"])
 
 ## SubList
 
-A hierarchical list view with expandable/collapsible groups. Items can be plain strings or
-nested dicts for sub-groups.
+A display-only indented list view. Items may be nested lists; nested items are rendered
+with indentation to show hierarchy. Not focusable — updated programmatically via
+`shell.update()`.
 
 ```python
 SubList(items)
 ```
 
-`items` can be:
-- A `list[str]` — flat list (same as `ListView`)
-- A `dict[str, list]` — top-level groups mapping label → children
-- Nested combinations for deeper hierarchies
+`items` is a `list` where any element may itself be a `list` to create an indented
+sub-group. Nesting can go to any depth.
 
 ```python
 from panelmark_tui.interactions import SubList
 
-tree = SubList({
-    "Documents": ["report.pdf", "notes.txt"],
-    "Pictures":  ["photo1.jpg", "photo2.jpg"],
-})
-sh.assign("tree", tree)
+sections = SubList([
+    "Documents",
+    ["report.pdf", "notes.txt"],      # indented under Documents
+    "Pictures",
+    ["photo1.jpg", "photo2.jpg"],     # indented under Pictures
+])
+sh.assign("sections", sections)
 ```
+
+**Note:** `SubList` is a static flat renderer — it has no expand/collapse state and no
+keyboard navigation. For a read-only display of hierarchical data where structure is
+communicated by indentation, it works well. For interactive tree navigation, use a
+`MenuFunction` with custom item construction.
 
 ---
 
 ## CheckBox
 
-A scrollable list of checkboxes for multi-selection.
+A scrollable checkbox list. Supports **multi-select** (the default) and **single-select**
+modes.
 
 ```python
-CheckBox(items: dict[str, bool])
+CheckBox(items: dict[str, bool], mode: str = "multi")
 ```
 
 `items` maps labels to initial checked states.
+
+### Multi mode (`mode="multi"`, default)
+
+Any number of items can be checked simultaneously. Checked items show `[X]`, unchecked
+show `[ ]`.
 
 ```python
 from panelmark_tui.interactions import CheckBox
@@ -212,12 +231,24 @@ options = CheckBox({
 })
 sh.assign("options", options)
 
-# Read the result
 result = sh.get("options")   # dict[str, bool]
 ```
 
-**Keys:** `↑`/`↓` to navigate; `Space` or `Enter` to toggle; `←`/`→` to explicitly
-set unchecked/checked.
+### Single mode (`mode="single"`)
+
+At most one item can be checked at a time. Checking a new item automatically unchecks the
+previously checked one. Checked items show `(●)`, unchecked show `( )`.
+
+```python
+priority = CheckBox({
+    "High":   True,
+    "Medium": False,
+    "Low":    False,
+}, mode="single")
+sh.assign("priority", priority)
+```
+
+**Keys:** `↑`/`↓` or `k`/`j` to navigate; `Space` or `Enter` to toggle.
 
 **Value:** `dict[str, bool]` — label → checked state for all items.
 

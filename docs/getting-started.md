@@ -21,7 +21,7 @@ LAYOUT = """
 """
 ```
 
-This creates four regions:
+This creates three regions:
 - `$tasks$` — 18 rows tall, for the task list
 - `$entry$` — 2 rows, for typing new tasks
 - `$status$` — 2 rows, for status messages

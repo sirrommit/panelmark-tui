@@ -160,26 +160,36 @@ Most tests that call `handle_key()` directly pass plain strings like `"KEY_DOWN"
 
 ## Testing Widgets
 
-Widgets run a full shell event loop. Test them by injecting a `MockTerminal` and feeding
-pre-recorded key sequences.
-
-The recommended approach is to call the widget directly with `_terminal` override:
+Widgets run a full shell event loop internally. Test them by creating a `MockTerminal`,
+attaching it to a parent shell, and calling `.show()` with that parent shell.
 
 ```python
-# Most widgets accept a _terminal kwarg (or inherit it from the Shell constructor)
 from panelmark_tui import Shell
 from panelmark_tui.testing import MockTerminal
+from panelmark_tui.widgets import Alert
 
-class FakeEventLoop:
-    """Replay a fixed sequence of key strings."""
-    def __init__(self, keys):
-        self._keys = iter(keys)
-    def next_key(self):
-        return next(self._keys, None)
+def make_parent(keys, width=80, height=24):
+    """Return a minimal Shell whose terminal replays a fixed key sequence."""
+    term = MockTerminal(width=width, height=height, keys=keys)
+    sh = Shell("|{$dummy$}|")
+    sh.terminal = term
+    return sh
+
+def test_alert_ok_returns_true():
+    parent = make_parent(keys=["KEY_ENTER"])
+    result = Alert(title="Hi", message_lines=["Hello"]).show(parent_shell=parent)
+    assert result is True
+
+def test_alert_escape_returns_none():
+    parent = make_parent(keys=["\x1b"])
+    result = Alert(title="Hi", message_lines=["Hello"]).show(parent_shell=parent)
+    assert result is None
 ```
 
-For simpler widget tests, check the existing test suite in `tests/test_widgets.py` for
-patterns that use `capsys` and `MockTerminal` to drive the full render + event cycle.
+The key point: inject the terminal via `parent_shell.terminal`, **not** as a `_terminal`
+kwarg to the widget constructor (that parameter does not exist on widget classes).
+
+For more complete patterns see `tests/test_widgets.py` in the repository.
 
 ---
 

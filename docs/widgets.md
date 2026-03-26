@@ -111,8 +111,8 @@ Cancel/Escape/Ctrl+Q.
 
 **Notes:**
 - Focus opens on the text entry box
-- Tab moves focus to the button row
-- Enter in the entry box submits (same as clicking OK)
+- `Enter` in the entry box **inserts a newline** (the box uses extend mode)
+- `Tab` moves focus to the button row; `Enter` on OK then submits
 
 ---
 
@@ -211,17 +211,17 @@ dest = FilePicker(
 ).show(parent_shell=sh)
 ```
 
-**Returns:** absolute path string on Open, `None` on Cancel/Escape/Ctrl+Q.
+**Returns:** absolute path string on OK, `None` on Cancel/Escape/Ctrl+Q.
 
-**Layout:** two-column panel (directory tree left, file list right), filter bar,
-filename bar, Open/Cancel buttons.
+**Layout:** two-column panel (directory tree left, file list right), filter field
+(glob pattern), filename field, status bar, OK/Cancel buttons.
 
 **Interaction:**
-- Navigate the directory tree on the left with `↑`/`↓`; `Enter` to expand/collapse
-- File list on the right is filtered live by the glob pattern in the filter bar
-- Selecting a file populates the filename bar
-- Typing in the filename bar lets you enter a path directly
-- Tab to move between panels
+- Navigate either panel with `↑`/`↓`; `Enter` on a directory **navigates into it**
+- The file list is filtered live by the glob pattern typed in the filter field
+- Selecting a file copies its path into the filename field
+- The filename field can also be typed in directly
+- `Tab` moves focus between panels and fields
 
 ---
 
