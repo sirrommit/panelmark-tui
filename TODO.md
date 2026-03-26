@@ -7,7 +7,7 @@ needs a follow-up adaptation.
 ## Current priorities
 
 - [x] Rewrite [examples/task_manager.py](/home/sirrommit/claude_play/panelmark-tui/examples/task_manager.py) to avoid private shell internals such as `_interactions` and ad hoc shell state like `_current_task`.
-- [ ] Add smoke coverage for examples so README/demo drift is caught automatically.
+- [x] Add smoke coverage for examples so README/demo drift is caught automatically.
 - [ ] Add a `Makefile` or `justfile` for common `panelmark-tui` workflows:
   - `test`
   - `test-all` or equivalent with the required `PYTHONPATH`
