@@ -437,6 +437,21 @@ def clock_handler(shell, context, key):
 sh.assign("clock", Function(clock_handler))
 ```
 
+### When to use `Function`
+
+Use `Function` only when no built-in interaction fits and you need full control over
+drawing and key handling.  Good candidates:
+
+- Custom visualisations (graphs, progress bars, ASCII art) that don't map to any
+  standard widget
+- One-off display regions that read external state on every render call
+- Wrappers around third-party drawing code
+
+**When not to use `Function`:**  if you find yourself re-implementing navigation,
+selection, or text editing inside a handler, consider whether a built-in interaction
+or a new subclass of `_ScrollableList` would be a better fit.  `Function` is a
+last resort, not a default choice.
+
 ---
 
 ## FormInput

@@ -253,6 +253,21 @@ class TestGetValue:
         vals = inter.get_value()
         assert vals["value"] is None
 
+    def test_round_trip_get_set_value(self):
+        inter = make_interaction(Simple())
+        # Type into the first field to move it out of default mode
+        inter.handle_key("B")
+        inter.handle_key("o")
+        inter.handle_key("b")
+        state = inter.get_value()
+        inter.set_value(state)
+        assert inter.get_value() == state
+
+    def test_signal_return_initially_false(self):
+        inter = make_interaction(Simple())
+        fired, _ = inter.signal_return()
+        assert fired is False
+
 
 # ---------------------------------------------------------------------------
 # _DataclassFormInteraction — navigation

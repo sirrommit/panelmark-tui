@@ -4,6 +4,7 @@ from panelmark_tui.interactions import (
     MenuFunction, MenuReturn,
     TextBox, ListView, CheckBox, Function, FormInput,
     RadioList, TreeView, TableView,
+    StatusMessage, DataclassFormInteraction,
 )
 from panelmark.draw import RenderContext, WriteCmd, FillCmd, CursorCmd
 
@@ -388,6 +389,78 @@ class TestListView:
         lv = ListView(['a', 'b'], bullet='A')
         assert lv._bullet == 'A'
 
+    def test_round_trip_get_set_value(self):
+        lv = ListView(['x', 'y', 'z'])
+        items = lv.get_value()
+        lv.set_value(items)
+        assert lv.get_value() == items
+
+    def test_signal_return_never_fires(self):
+        lv = ListView(['a', 'b'])
+        lv.handle_key('KEY_DOWN')
+        fired, _ = lv.signal_return()
+        assert fired is False
+
+
+class TestStatusMessage:
+    def test_initial_value_is_none(self):
+        s = StatusMessage()
+        assert s.get_value() is None
+
+    def test_set_value_tuple(self):
+        s = StatusMessage()
+        s.set_value(('error', 'File not found'))
+        assert s.get_value() == ('error', 'File not found')
+
+    def test_set_value_success(self):
+        s = StatusMessage()
+        s.set_value(('success', 'Saved'))
+        assert s.get_value() == ('success', 'Saved')
+
+    def test_set_value_none_clears(self):
+        s = StatusMessage()
+        s.set_value(('info', 'hello'))
+        s.set_value(None)
+        assert s.get_value() is None
+
+    def test_set_value_empty_string_clears(self):
+        s = StatusMessage()
+        s.set_value(('info', 'hello'))
+        s.set_value('')
+        assert s.get_value() is None
+
+    def test_set_value_plain_string(self):
+        s = StatusMessage()
+        s.set_value('plain message')
+        val = s.get_value()
+        assert val is not None
+        assert 'plain message' in val[1]
+
+    def test_round_trip_get_set_value(self):
+        s = StatusMessage()
+        s.set_value(('info', 'status text'))
+        val = s.get_value()
+        s.set_value(val)
+        assert s.get_value() == val
+
+    def test_signal_return_never_fires(self):
+        s = StatusMessage()
+        s.set_value(('error', 'oops'))
+        fired, _ = s.signal_return()
+        assert fired is False
+
+    def test_render_returns_commands(self):
+        s = StatusMessage()
+        s.set_value(('info', 'hello'))
+        cmds = s.render(ctx())
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_blank_when_no_message(self):
+        s = StatusMessage()
+        cmds = s.render(ctx())
+        assert not any(isinstance(c, WriteCmd) for c in cmds)
+
 
 class TestCheckBox:
     def test_initial_value(self):
@@ -604,6 +677,11 @@ class TestFormInput:
         form.handle_key('KEY_DOWN')
         assert form._active_index == 1
 
+    def test_signal_return_initially_false(self):
+        form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})
+        fired, _ = form.signal_return()
+        assert fired is False
+
     def test_submit_valid_form(self):
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})
         form.handle_key('h')
@@ -613,6 +691,15 @@ class TestFormInput:
         should_exit, rv = form.signal_return()
         assert should_exit is True
         assert rv['name'] == 'hi'
+
+    def test_round_trip_get_set_value(self):
+        form = FormInput({
+            'name': {'type': 'str', 'descriptor': 'Name', 'default': 'Alice'},
+            'flag': {'type': 'bool', 'descriptor': 'Flag', 'default': True},
+        })
+        state = form.get_value()
+        form.set_value(state)
+        assert form.get_value() == state
 
     def test_submit_required_field_empty(self):
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name', 'required': True}})

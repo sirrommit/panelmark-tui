@@ -78,13 +78,13 @@ and the target interaction matrix.
 
 ### Phase 5 — Display interactions and escape-hatch clarification
 
-- [ ] Verify `ListView`: `get_value()` = current items list, no `signal_return()`.
-- [ ] Verify `StatusMessage`: `get_value()` = `(style, message)` or `None`,
+- [x] Verify `ListView`: `get_value()` = current items list, no `signal_return()`.
+- [x] Verify `StatusMessage`: `get_value()` = `(style, message)` or `None`,
       no `signal_return()`.
-- [ ] Verify `FormInput` and `DataclassFormInteraction` current-state semantics
+- [x] Verify `FormInput` and `DataclassFormInteraction` current-state semantics
       match the matrix.
-- [ ] Add a brief "Escape hatch" section to `docs/interactions.md` for `Function`.
-- [ ] Add round-trip tests for `ListView`, `StatusMessage`, `FormInput`,
+- [x] Add a brief "Escape hatch" section to `docs/interactions.md` for `Function`.
+- [x] Add round-trip tests for `ListView`, `StatusMessage`, `FormInput`,
       `DataclassFormInteraction`.
 
 ## Later work

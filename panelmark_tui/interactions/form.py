@@ -630,6 +630,9 @@ class DataclassFormInteraction(Interaction):
                 if fi["name"] == name:
                     if val is None:
                         self._field_text[name] = None if fi["has_default"] else ""
+                    elif fi["has_default"] and val == fi["default_raw"]:
+                        # Restore to default mode so get_value() round-trips cleanly
+                        self._field_text[name] = None
                     else:
                         self._field_text[name] = str(val)
                     break
