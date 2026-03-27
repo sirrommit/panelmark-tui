@@ -3,7 +3,7 @@ from .textbox import TextBox
 from .list_view import ListView
 from .checkbox import CheckBox
 from .function import Function
-from .form import FormInput
+from .form import FormInput, DataclassFormInteraction
 from .status_message import StatusMessage
 from .tree_view import TreeView
 from .radio_list import RadioList
@@ -17,6 +17,7 @@ __all__ = [
     "CheckBox",
     "Function",
     "FormInput",
+    "DataclassFormInteraction",
     "StatusMessage",
     "TreeView",
     "RadioList",

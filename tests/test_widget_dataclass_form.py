@@ -8,9 +8,9 @@ import pytest
 
 from panelmark.draw import RenderContext, WriteCmd
 from panelmark_tui.testing import MockTerminal, make_key
-from panelmark_tui.widgets.dataclass_form import (
-    DataclassForm,
-    _DataclassFormInteraction,
+from panelmark_tui.widgets.dataclass_form import DataclassForm
+from panelmark_tui.interactions.form import (
+    DataclassFormInteraction,
     _extract_fields_info,
     _type_str,
     _NONE_SENTINEL,
@@ -57,12 +57,7 @@ def ctx(width=40, height=10) -> RenderContext:
 def make_interaction(dc=None, actions=None, on_change=None):
     if dc is None:
         dc = Simple()
-    fi = _extract_fields_info(dc)
-    return _DataclassFormInteraction(
-        fields_info=fi,
-        actions=actions or [],
-        on_change=on_change,
-    )
+    return DataclassFormInteraction(dc, actions=actions, on_change=on_change)
 
 
 class _FakeParent:
