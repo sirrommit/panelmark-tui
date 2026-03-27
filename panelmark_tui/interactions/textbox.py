@@ -4,17 +4,32 @@ from panelmark.draw import DrawCommand, RenderContext, WriteCmd, FillCmd, Cursor
 
 
 class TextBox(Interaction):
-    """A text input box with optional word-wrap modes."""
+    """A text input box with optional word-wrap modes.
+
+    ``enter_mode`` controls what happens when the user presses Enter:
+
+    - ``"newline"`` (default) — inserts a newline character.
+    - ``"submit"`` — records a submit intent; ``signal_return()`` will then
+      return ``(True, text)`` so the shell exits with the current text.
+    - ``"ignore"`` — Enter is silently ignored.
+
+    ``get_value()`` always returns the current text regardless of
+    ``enter_mode``.  ``signal_return()`` only fires once per submit press
+    and only when ``enter_mode="submit"``.
+    """
 
     def __init__(
         self,
         initial: str = "",
         wrap: Literal["word", "anywhere", "extend"] = "word",
         readonly: bool = False,
+        enter_mode: Literal["newline", "submit", "ignore"] = "newline",
     ):
         self._text = initial
         self._wrap = wrap
         self._readonly = readonly
+        self._enter_mode = enter_mode
+        self._submitted = False
         self._cursor_pos = len(initial)  # position in text
         self._scroll_offset = 0  # row scroll offset
 
@@ -137,12 +152,26 @@ class TextBox(Interaction):
             elif name == 'KEY_END':
                 self._cursor_pos = len(self._text)
             elif name == 'KEY_ENTER':
-                self._text = self._text[:self._cursor_pos] + '\n' + self._text[self._cursor_pos:]
-                self._cursor_pos += 1
-                return True, self.get_value()
+                if self._enter_mode == 'newline':
+                    self._text = self._text[:self._cursor_pos] + '\n' + self._text[self._cursor_pos:]
+                    self._cursor_pos += 1
+                    return True, self.get_value()
+                elif self._enter_mode == 'submit':
+                    self._submitted = True
+                    return True, self.get_value()
+                # 'ignore': fall through
         else:
             char = key
-            if char and char.isprintable():
+            if char in ('\n', '\r'):
+                if self._enter_mode == 'newline':
+                    self._text = self._text[:self._cursor_pos] + '\n' + self._text[self._cursor_pos:]
+                    self._cursor_pos += 1
+                    return True, self.get_value()
+                elif self._enter_mode == 'submit':
+                    self._submitted = True
+                    return True, self.get_value()
+                # 'ignore': fall through
+            elif char and char.isprintable():
                 self._text = self._text[:self._cursor_pos] + char + self._text[self._cursor_pos:]
                 self._cursor_pos += 1
                 return True, self.get_value()
@@ -155,3 +184,15 @@ class TextBox(Interaction):
     def set_value(self, value) -> None:
         self._text = str(value)
         self._cursor_pos = len(self._text)
+        self._submitted = False
+
+    def signal_return(self) -> tuple:
+        """Return ``(True, text)`` after Enter is pressed in ``enter_mode="submit"``.
+
+        Resets the submit flag after firing so a second call returns
+        ``(False, None)`` until Enter is pressed again.
+        """
+        if self._submitted:
+            self._submitted = False
+            return True, self._text
+        return False, None

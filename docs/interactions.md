@@ -145,6 +145,7 @@ TextBox(
     initial: str = "",
     wrap: Literal["word", "anywhere", "extend"] = "word",
     readonly: bool = False,
+    enter_mode: Literal["newline", "submit", "ignore"] = "newline",
 )
 ```
 
@@ -153,12 +154,20 @@ TextBox(
 - `"anywhere"` — wrap mid-word when the line is full
 - `"extend"` — no wrap; newlines only on `Enter` (best for single-line inputs)
 
+**Enter modes:**
+- `"newline"` (default) — `Enter` inserts a newline character.
+- `"submit"` — `Enter` does not insert a newline; instead `signal_return()` fires
+  with the current text so the shell can exit.  Use this for single-line prompts
+  where `Enter` should accept the input.
+- `"ignore"` — `Enter` is silently discarded.
+
 ```python
 from panelmark_tui.interactions import TextBox
 
-# Single-line entry field
-entry = TextBox(wrap="extend")
+# Single-line entry that submits on Enter
+entry = TextBox(wrap="extend", enter_mode="submit")
 sh.assign("entry", entry)
+result = sh.run()   # returns the typed text when Enter is pressed
 
 # Read-only display
 display = TextBox(initial="some text", readonly=True)
@@ -166,10 +175,14 @@ sh.assign("display", display)
 ```
 
 **Keys:** printable characters to type; `Backspace`/`Delete` to erase; `←`/`→` to move
-cursor; `Home`/`End` to jump to buffer start/end; `Enter` to insert newline (except
-`readonly=True`).
+cursor; `Home`/`End` to jump to buffer start/end; `Enter` behaviour depends on
+`enter_mode` (see above).
 
 **Value:** `str` — the full text content including any newlines.
+
+**`signal_return()`:** fires with `(True, text)` when `Enter` is pressed and
+`enter_mode="submit"`.  Resets after the first call so it fires exactly once per
+press.  Always returns `(False, None)` in `"newline"` and `"ignore"` modes.
 
 ---
 

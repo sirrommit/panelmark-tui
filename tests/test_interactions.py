@@ -245,6 +245,90 @@ class TestTextBox:
         text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
         assert 'hello' in text
 
+    # --- enter_mode tests ---
+
+    def test_newline_mode_enter_inserts_newline(self):
+        t = TextBox(enter_mode='newline')
+        changed, val = t.handle_key('KEY_ENTER')
+        assert changed is True
+        assert '\n' in val
+
+    def test_newline_mode_signal_return_never_fires(self):
+        t = TextBox(enter_mode='newline')
+        t.handle_key('KEY_ENTER')
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_submit_mode_enter_does_not_insert_newline(self):
+        t = TextBox(initial='hello', enter_mode='submit')
+        t.handle_key('KEY_ENTER')
+        assert '\n' not in t.get_value()
+
+    def test_submit_mode_signal_return_fires_after_enter(self):
+        t = TextBox(initial='hello', enter_mode='submit')
+        t.handle_key('KEY_ENTER')
+        fired, val = t.signal_return()
+        assert fired is True
+        assert val == 'hello'
+
+    def test_submit_mode_signal_return_resets_after_fire(self):
+        t = TextBox(initial='hello', enter_mode='submit')
+        t.handle_key('KEY_ENTER')
+        t.signal_return()
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_submit_mode_no_signal_before_enter(self):
+        t = TextBox(initial='hello', enter_mode='submit')
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_ignore_mode_enter_does_nothing(self):
+        t = TextBox(initial='hello', enter_mode='ignore')
+        changed, val = t.handle_key('KEY_ENTER')
+        assert changed is False
+        assert val == 'hello'
+
+    def test_ignore_mode_signal_return_never_fires(self):
+        t = TextBox(enter_mode='ignore')
+        t.handle_key('KEY_ENTER')
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_submit_mode_literal_newline_key(self):
+        t = TextBox(initial='abc', enter_mode='submit')
+        t.handle_key('\n')
+        fired, val = t.signal_return()
+        assert fired is True
+        assert val == 'abc'
+
+    def test_newline_mode_literal_newline_key_inserts(self):
+        t = TextBox(enter_mode='newline')
+        t.handle_key('\n')
+        assert '\n' in t.get_value()
+
+    def test_ignore_mode_literal_newline_key_does_nothing(self):
+        t = TextBox(initial='x', enter_mode='ignore')
+        t.handle_key('\n')
+        assert t.get_value() == 'x'
+
+    def test_set_value_resets_submitted_flag(self):
+        t = TextBox(initial='hello', enter_mode='submit')
+        t.handle_key('KEY_ENTER')
+        t.set_value('new text')
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_round_trip_get_set_value(self):
+        t = TextBox(initial='foo', enter_mode='submit')
+        t.set_value('bar')
+        assert t.get_value() == 'bar'
+
+    def test_default_enter_mode_is_newline(self):
+        t = TextBox()
+        t.handle_key('KEY_ENTER')
+        assert '\n' in t.get_value()
+
 
 class TestListView:
     def test_initial_value(self):

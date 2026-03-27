@@ -9,16 +9,6 @@ first expectation.
 
 ## Widgets
 
-### `InputPrompt` — `Enter` in the text box inserts a newline, not submits
-
-The entry box inside `InputPrompt` uses `TextBox(wrap="extend")`.  Pressing `Enter`
-inside the box inserts a newline character rather than submitting the dialog.
-
-To submit: press `Tab` to move focus to the button row, then `Enter` on OK.
-
-This is intentional — it matches `TextBox` behaviour consistently and allows
-multi-line input if the box is tall enough.
-
 ### `FilePicker` — directory panel navigates into directories, does not toggle expand/collapse
 
 The tree panel on the left shows the contents of the currently selected directory.

@@ -52,12 +52,12 @@ and the target interaction matrix.
 
 ### Phase 3 — `TextBox` submit mode
 
-- [ ] Add `enter_mode` parameter to `TextBox`: `"newline"` (default), `"submit"`, `"ignore"`.
-- [ ] Implement `TextBox.signal_return()`: signals with current text only in
+- [x] Add `enter_mode` parameter to `TextBox`: `"newline"` (default), `"submit"`, `"ignore"`.
+- [x] Implement `TextBox.signal_return()`: signals with current text only in
       `enter_mode="submit"` after Enter is pressed.
-- [ ] Update `InputPrompt` to use `enter_mode="submit"` if it simplifies its
+- [x] Update `InputPrompt` to use `enter_mode="submit"` if it simplifies its
       button/submit wiring.
-- [ ] Add tests: submit mode signals return; newline mode does not; ignore mode does
+- [x] Add tests: submit mode signals return; newline mode does not; ignore mode does
       not; round-trip `get_value()` / `set_value()`.
 
 ### Phase 4 — Align selector family docs and tests

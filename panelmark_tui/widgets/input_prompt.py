@@ -81,6 +81,6 @@ class InputPrompt(_ModalWidget):
     def _build_popup(self, term):
         popup = Shell(_shell_def(self.title), _terminal=term)
         popup.assign("prompt",  ListView(self.prompt_lines, bullet=" "))
-        popup.assign("entry",   TextBox(initial=self.initial, wrap="extend"))
+        popup.assign("entry",   TextBox(initial=self.initial, wrap="extend", enter_mode="submit"))
         popup.assign("buttons", _SubmittingMenu("entry"))
         return popup
