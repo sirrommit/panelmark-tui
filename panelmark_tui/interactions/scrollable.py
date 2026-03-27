@@ -45,7 +45,9 @@ Future extraction note
 and ``SubList`` extend it directly so that display-only interactions can
 inherit scroll state without inheriting the list-selection machinery.
 ``_ScrollableList`` uses ``_active_index``-based clamping on top of the same
-scroll primitives.
+scroll primitives.  ``ListView`` extends ``_Scrollable`` directly so that
+display-only interactions can inherit scroll state without the selection
+machinery.
 """
 
 from panelmark.interactions.base import Interaction

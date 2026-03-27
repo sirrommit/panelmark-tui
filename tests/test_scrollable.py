@@ -4,7 +4,7 @@ and for ListView / SubList display-only scrolling."""
 import pytest
 from panelmark_tui.testing import make_key
 from panelmark_tui.interactions import MenuFunction, MenuReturn, CheckBox
-from panelmark_tui.interactions.list_view import ListView, SubList
+from panelmark_tui.interactions.list_view import ListView
 from panelmark_tui.interactions.scrollable import _list_nav
 from panelmark.draw import RenderContext, WriteCmd, FillCmd
 
@@ -240,39 +240,6 @@ class TestListViewScroll:
         lv._scroll_by(15, 20)   # offset = 15
         lv.set_value(list(range(3)))  # shrink list to 3 items
         assert lv._scroll_offset == 0
-
-
-# ---------------------------------------------------------------------------
-# SubList scroll behaviour
-# ---------------------------------------------------------------------------
-
-class TestSubListScroll:
-    def test_not_focusable(self):
-        sl = SubList(['a', 'b'])
-        assert sl.is_focusable is False
-
-    def test_flat_items_rendered(self):
-        sl = SubList(['foo', 'bar', 'baz'])
-        cmds = sl.render(ctx(3), focused=False)
-        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
-        assert any('foo' in t for t in texts)
-        assert any('bar' in t for t in texts)
-
-    def test_nested_items_indented(self):
-        sl = SubList(['top', ['child1', 'child2'], 'bottom'])
-        cmds = sl.render(ctx(10), focused=False)
-        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
-        child_lines = [t for t in texts if 'child' in t]
-        assert all(t.startswith('  ') for t in child_lines)
-
-    def test_scroll_hides_top_items(self):
-        sl = SubList(list(f'Item {i}' for i in range(10)))
-        prime(sl, 3)
-        sl._scroll_by(3, 10)
-        cmds = sl.render(ctx(3), focused=False)
-        texts = [c.text for c in cmds if isinstance(c, WriteCmd)]
-        assert not any('Item 0' in t for t in texts)
-        assert any('Item 3' in t for t in texts)
 
 
 # ---------------------------------------------------------------------------

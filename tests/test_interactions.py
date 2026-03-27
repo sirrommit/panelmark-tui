@@ -2,7 +2,7 @@ import pytest
 from panelmark_tui.testing import MockTerminal, make_key
 from panelmark_tui.interactions import (
     MenuFunction, MenuReturn,
-    TextBox, ListView, SubList, CheckBox, Function, FormInput
+    TextBox, ListView, CheckBox, Function, FormInput
 )
 from panelmark.draw import RenderContext, WriteCmd, FillCmd, CursorCmd
 
@@ -240,30 +240,6 @@ class TestListView:
     def test_bullet_alpha_upper(self):
         lv = ListView(['a', 'b'], bullet='A')
         assert lv._bullet == 'A'
-
-
-class TestSubList:
-    def test_initial_value(self):
-        sl = SubList(['top', ['sub1', 'sub2'], 'end'])
-        assert sl.get_value() == ['top', ['sub1', 'sub2'], 'end']
-
-    def test_render_returns_commands(self):
-        sl = SubList(['item', ['subitem'], 'other'])
-        cmds = sl.render(ctx())
-        assert isinstance(cmds, list)
-        assert any(isinstance(c, WriteCmd) for c in cmds)
-
-    def test_render_nested_items_appear(self):
-        sl = SubList(['top', ['nested']])
-        cmds = sl.render(ctx(width=30, height=10))
-        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
-        assert 'top' in text
-        assert 'nested' in text
-
-    def test_handle_key_no_change(self):
-        sl = SubList(['a'])
-        changed, _ = sl.handle_key('KEY_DOWN')
-        assert changed is False
 
 
 class TestCheckBox:

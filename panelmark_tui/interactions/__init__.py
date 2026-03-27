@@ -1,6 +1,6 @@
 from .menu import MenuFunction, MenuReturn
 from .textbox import TextBox
-from .list_view import ListView, SubList
+from .list_view import ListView
 from .checkbox import CheckBox
 from .function import Function
 from .form import FormInput
@@ -14,7 +14,6 @@ __all__ = [
     "MenuReturn",
     "TextBox",
     "ListView",
-    "SubList",
     "CheckBox",
     "Function",
     "FormInput",

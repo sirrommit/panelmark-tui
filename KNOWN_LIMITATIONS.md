@@ -1,62 +1,51 @@
 # Known Limitations
 
-This document lists the known gaps between what the documentation describes and what is
-currently implemented.  Each item notes which package is affected, what the current
-behaviour is, and when a fix is planned.
-
----
-
-## Layout
-
-*(No known layout limitations — equal fill-split distribution is now implemented.)*
-
----
-
-## Shell language
-
-*(No known shell-language limitations.)*
-
----
-
-## Interactions
-
-### `SubList` is a static indented list, not a tree
-
-**Package:** `panelmark-tui`
-**Current behaviour:** `SubList` accepts nested lists and renders them with indentation.
-It has no expand/collapse state, no keyboard navigation, and is not focusable.
-**Status:** `SubList` is deprecated.  Use `TreeView` for interactive tree navigation.
+Real current limitations and intentionally non-obvious behaviour in panelmark-tui.
+Items here are not bugs — they are the current reality that a contributor or user
+needs to know about because the behaviour is surprising or differs from a reasonable
+first expectation.
 
 ---
 
 ## Widgets
 
-### `InputPrompt` — Enter inserts a newline, not submits
+### `InputPrompt` — `Enter` in the text box inserts a newline, not submits
 
-**Package:** `panelmark-tui`
-**Current behaviour:** The entry box uses `TextBox(wrap="extend")`.  Pressing `Enter` inside
-the box inserts a newline character.  To submit, press `Tab` to move focus to the button
-row, then `Enter` on OK.
-**Note:** This is intentional behaviour, not a bug.  The widget docstring describes it
-correctly.  The central `widgets.md` guide previously described it incorrectly and has been
-fixed.
+The entry box inside `InputPrompt` uses `TextBox(wrap="extend")`.  Pressing `Enter`
+inside the box inserts a newline character rather than submitting the dialog.
 
-### `FilePicker` — no expand/collapse tree navigation
+To submit: press `Tab` to move focus to the button row, then `Enter` on OK.
 
-**Package:** `panelmark-tui`
-**Current behaviour:** The tree panel on the left shows the directory structure.  Pressing
-`Enter` on a directory **navigates into it** — it does not toggle an expand/collapse state.
-There is no collapsible tree; the panel always shows the contents of the currently selected
-directory.
+This is intentional — it matches `TextBox` behaviour consistently and allows
+multi-line input if the box is tall enough.
+
+### `FilePicker` — directory panel navigates into directories, does not toggle expand/collapse
+
+The tree panel on the left shows the contents of the currently selected directory.
+Pressing `Enter` on a directory **navigates into it** — the panel contents change to
+show that directory's children.  There is no collapsible tree view; the FilePicker
+always shows a flat listing of the current directory.
 
 ---
 
 ## Testing
 
-### Widget `_terminal` kwarg does not exist
+### Widget constructor does not accept a `_terminal` kwarg
 
-**Package:** `panelmark-tui`
-**Current behaviour:** Widget classes (`Confirm`, `Alert`, etc.) do not accept a `_terminal`
-constructor argument.  To inject a mock terminal for testing, set `parent_shell.terminal`
-before calling `widget.show(parent_shell=parent_shell)`.
-See [docs/testing.md](docs/testing.md) for the correct pattern.
+Widget classes (`Confirm`, `Alert`, `FilePicker`, etc.) do not accept a `_terminal`
+constructor argument.  To inject a mock terminal for testing, set
+`parent_shell.terminal` before calling `widget.show(parent_shell=parent)`.
+
+See [docs/testing.md](docs/testing.md) for the correct pattern and examples.
+
+---
+
+## Shell language
+
+### Parser is permissive about split alignment
+
+The shell-language reference implies that structural column dividers must appear at
+exactly the same position in every content row of a block.  The parser enforces this
+loosely — some irregular layouts are accepted silently rather than raising an error.
+Valid layouts defined per the reference will always parse correctly; the edge cases
+are layouts that the reference would reject but the parser accepts.

@@ -1,13 +1,13 @@
 # Built-in Interactions
 
-panelmark-tui provides 12 built-in interaction types, all importable from
+panelmark-tui provides 11 built-in interaction types, all importable from
 `panelmark_tui.interactions`.
 
 ```python
 from panelmark_tui.interactions import (
     MenuFunction, MenuReturn,
     TextBox,
-    ListView, SubList,
+    ListView,
     CheckBox,
     Function,
     FormInput,
@@ -142,37 +142,6 @@ sh.update("log", current + ["New log entry"])
 ```
 
 **Value:** `list[str]` — the current list of display lines.
-
----
-
-## SubList
-
-> **Deprecated.** `SubList` is a static indented display widget with no expand/collapse
-> and no keyboard navigation. For interactive tree browsing use
-> [`TreeView`](#treeview) instead.
-
-A display-only indented list view. Items may be nested lists; nested items are rendered
-with indentation to show hierarchy. Not focusable — updated programmatically via
-`shell.update()`.
-
-```python
-SubList(items)
-```
-
-`items` is a `list` where any element may itself be a `list` to create an indented
-sub-group. Nesting can go to any depth.
-
-```python
-from panelmark_tui.interactions import SubList
-
-sections = SubList([
-    "Documents",
-    ["report.pdf", "notes.txt"],      # indented under Documents
-    "Pictures",
-    ["photo1.jpg", "photo2.jpg"],     # indented under Pictures
-])
-sh.assign("sections", sections)
-```
 
 ---
 

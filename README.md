@@ -16,7 +16,6 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | Tab / Shift+Tab focus movement | ✅ Fully working |
 | `MenuReturn`, `MenuFunction` | ✅ Working — up/down/j/k/Enter/Page Up/Page Down/Home/End navigation |
 | `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` | ✅ Working |
-| `SubList` | ⚠️ Deprecated — static indented list; use `TreeView` for interactive trees |
 | `TreeView` | ✅ Interactive collapsible tree — expand/collapse, full keyboard navigation |
 | Paging keys (Page Up/Down, Home/End) in menus | ✅ Implemented in all list interactions |
 | 7 classic modal widgets (`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`) | ✅ Working |
@@ -36,7 +35,7 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
 | Component | Description |
 |-----------|-------------|
 | `Shell` | Full terminal event loop (fullscreen and modal) |
-| 12 interaction types | `MenuFunction`, `MenuReturn`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
+| 11 interaction types | `MenuFunction`, `MenuReturn`, `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
 | 9 modal widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`, `Toast`, `Spinner` |
 | Testing utilities | `MockTerminal`, `make_key` for test suites that don't need a real terminal |
 
