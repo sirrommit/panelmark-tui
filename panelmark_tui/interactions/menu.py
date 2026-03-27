@@ -13,6 +13,8 @@ class MenuFunction(_ScrollableList):
         self._labels = list(items.keys())
         self._active_index = 0
         self._scroll_offset = 0
+        self._wants_exit = False
+        self._exit_value = None
         self._last_activated = None
         self._shell = None
 
@@ -23,6 +25,7 @@ class MenuFunction(_ScrollableList):
         return self._build_rows(viewport, context, focused)
 
     def handle_key(self, key) -> tuple:
+        self._wants_exit = False
         new_idx = _list_nav(key, self._active_index, len(self._labels),
                             self._last_height)
         if new_idx is not None:
@@ -53,6 +56,11 @@ class MenuFunction(_ScrollableList):
             self._active_index = self._labels.index(value)
             self._clamp_scroll()
         self._last_activated = value
+
+    def signal_return(self) -> tuple:
+        if self._wants_exit:
+            return True, self._exit_value
+        return False, None
 
 
 class MenuReturn(_ScrollableList):
@@ -111,67 +119,3 @@ class MenuReturn(_ScrollableList):
         return False, None
 
 
-class MenuHybrid(_ScrollableList):
-    """Menu where items can be callables or return values."""
-
-    def __init__(self, items: dict):
-        """
-        items: dict[str, Callable | Any]
-        """
-        self._items = items
-        self._labels = list(items.keys())
-        self._active_index = 0
-        self._scroll_offset = 0
-        self._wants_exit = False
-        self._exit_value = None
-        self._last_activated = None
-        self._shell = None
-
-    def render(self, context: RenderContext, focused: bool = False) -> list[DrawCommand]:
-        viewport = self._labels[
-            self._scroll_offset: self._scroll_offset + context.height
-        ]
-        return self._build_rows(viewport, context, focused)
-
-    def handle_key(self, key) -> tuple:
-        self._wants_exit = False
-        new_idx = _list_nav(key, self._active_index, len(self._labels),
-                            self._last_height)
-        if new_idx is not None:
-            self._active_index = new_idx
-            self._clamp_scroll()
-            return True, self.get_value()
-        if key == 'KEY_ENTER' or key in ('\n', '\r'):
-            return self._activate()
-        return False, self.get_value()
-
-    def _activate(self):
-        if not self._labels:
-            return False, self.get_value()
-        label = self._labels[self._active_index]
-        value = self._items[label]
-        self._last_activated = label
-        if callable(value):
-            if self._shell is not None:
-                value(self._shell)
-            else:
-                value(None)
-            return True, self.get_value()
-        else:
-            self._exit_value = value
-            self._wants_exit = True
-            return True, self.get_value()
-
-    def get_value(self):
-        return self._last_activated
-
-    def set_value(self, value) -> None:
-        if value in self._labels:
-            self._active_index = self._labels.index(value)
-            self._clamp_scroll()
-        self._last_activated = value
-
-    def signal_return(self) -> tuple:
-        if self._wants_exit:
-            return True, self._exit_value
-        return False, None

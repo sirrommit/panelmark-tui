@@ -8,7 +8,7 @@ Run:
 """
 
 from panelmark_tui import Shell
-from panelmark_tui.interactions import MenuFunction, MenuHybrid, StatusMessage
+from panelmark_tui.interactions import MenuFunction, StatusMessage
 from panelmark_tui.widgets import Alert
 
 # ── Layout ────────────────────────────────────────────────────────────────────
@@ -46,13 +46,16 @@ def show_about(sh):
 def main():
     sh = Shell(LAYOUT)
 
-    # MenuHybrid: callable values are invoked; plain values cause the shell to exit
-    # with that value as the return.  "quit" → shell.run() returns "quit".
-    sh.assign("menu", MenuHybrid({
+    def _quit(sh):
+        menu._wants_exit = True
+        menu._exit_value = None
+
+    menu = MenuFunction({
         "Say Hello": say_hello,
         "About":     show_about,
-        "Quit":      "quit",      # plain value → shell.run() returns "quit"
-    }))
+        "Quit":      _quit,
+    })
+    sh.assign("menu", menu)
 
     sh.assign("status", StatusMessage())
     sh.update("status", ("info", "Use ↑ ↓ to navigate, Enter to select."))

@@ -17,8 +17,8 @@ needs a follow-up adaptation.
 
 ## API cleanup
 
-- [ ] Decide whether `MenuHybrid` stays as-is, is renamed, or is replaced by a clearer action/value API.
-- [ ] If `MenuHybrid` stays, tighten its public documentation and examples so the callable-or-value rule is immediately obvious.
+- [x] Decide whether `MenuHybrid` stays as-is, is renamed, or is replaced by a clearer action/value API.
+- [x] If `MenuHybrid` stays, tighten its public documentation and examples so the callable-or-value rule is immediately obvious.
 - [ ] Keep `SubList` as compatibility-only unless there is a strong reason to keep investing in it separately from `TreeView`.
 
 ## Docs and demos

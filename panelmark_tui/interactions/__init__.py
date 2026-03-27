@@ -1,4 +1,4 @@
-from .menu import MenuFunction, MenuReturn, MenuHybrid
+from .menu import MenuFunction, MenuReturn
 from .textbox import TextBox
 from .list_view import ListView, SubList
 from .checkbox import CheckBox
@@ -12,7 +12,6 @@ from .table_view import TableView
 __all__ = [
     "MenuFunction",
     "MenuReturn",
-    "MenuHybrid",
     "TextBox",
     "ListView",
     "SubList",

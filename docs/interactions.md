@@ -5,13 +5,14 @@ panelmark-tui provides 12 built-in interaction types, all importable from
 
 ```python
 from panelmark_tui.interactions import (
-    MenuFunction, MenuReturn, MenuHybrid,
+    MenuFunction, MenuReturn,
     TextBox,
     ListView, SubList,
     CheckBox,
     Function,
     FormInput,
     StatusMessage,
+    TreeView,
     RadioList,
     TableView,
 )
@@ -77,37 +78,6 @@ menu = MenuFunction({
     "Quit":       lambda sh: sh.handle_key("\x11"),   # Ctrl+Q
 })
 sh.assign("menu", menu)
-```
-
-**Keys:** same navigation as `MenuReturn` (including `Page Up`/`Page Down`/`Home`/`End`).
-
----
-
-## MenuHybrid
-
-A scrollable menu where each item is either a **callable** or a **plain value**.
-
-```python
-MenuHybrid(items: dict)
-```
-
-- If the selected item's value is **callable**, it is called as `callback(shell)` and the
-  shell continues running. Use this for items with side effects.
-- If the selected item's value is **not callable**, the shell exits and `shell.run()`
-  returns that value. Use this for items that should close the shell.
-
-```python
-from panelmark_tui.interactions import MenuHybrid
-
-def say_hello(sh):
-    sh.update("status", ("success", "Hello!"))
-
-menu = MenuHybrid({
-    "Say Hello": say_hello,   # callable → runs, stays open
-    "About":     show_about,  # callable → runs, stays open
-    "Quit":      "quit",      # plain value → shell.run() returns "quit"
-})
-result = sh.run()   # returns "quit" when Quit is selected
 ```
 
 **Keys:** same navigation as `MenuReturn` (including `Page Up`/`Page Down`/`Home`/`End`).
@@ -518,10 +488,10 @@ sh.update("status", None)   # clear
 
 ## Scrolling behaviour
 
-`MenuReturn`, `MenuFunction`, `MenuHybrid`, and `CheckBox` all inherit from
+`MenuReturn`, `MenuFunction`, and `CheckBox` all inherit from
 `_ScrollableList`, which provides automatic scroll tracking.
 
-**Navigation keys supported by all four:**
+**Navigation keys supported by all three:**
 
 | Key | Action |
 |-----|--------|

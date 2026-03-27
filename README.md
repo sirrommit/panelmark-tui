@@ -14,7 +14,7 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | Fullscreen event loop (`Shell.run()`) | ✅ Fully working |
 | Modal overlay (`Shell.run_modal()`) | ✅ Fully working |
 | Tab / Shift+Tab focus movement | ✅ Fully working |
-| `MenuReturn`, `MenuFunction`, `MenuHybrid` | ✅ Working — up/down/j/k/Enter navigation |
+| `MenuReturn`, `MenuFunction` | ✅ Working — up/down/j/k/Enter/Page Up/Page Down/Home/End navigation |
 | `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `StatusMessage` | ✅ Working |
 | `SubList` | ⚠️ Deprecated — static indented list; use `TreeView` for interactive trees |
 | `TreeView` | ✅ Interactive collapsible tree — expand/collapse, full keyboard navigation |
@@ -36,7 +36,7 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
 | Component | Description |
 |-----------|-------------|
 | `Shell` | Full terminal event loop (fullscreen and modal) |
-| 13 interaction types | `MenuFunction`, `MenuReturn`, `MenuHybrid`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
+| 12 interaction types | `MenuFunction`, `MenuReturn`, `TextBox`, `ListView`, `SubList` (deprecated), `CheckBox`, `Function`, `FormInput`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
 | 9 modal widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`, `Toast`, `Spinner` |
 | Testing utilities | `MockTerminal`, `make_key` for test suites that don't need a real terminal |
 
@@ -123,9 +123,10 @@ def handle_delete(sh):
 | Document | Description |
 |----------|-------------|
 | [Getting Started](docs/getting-started.md) | Step-by-step guide: building your first TUI |
-| [Interactions](docs/interactions.md) | All 10 built-in interaction types with examples |
-| [Widgets](docs/widgets.md) | All 7 modal widgets with full API reference |
+| [Interactions](docs/interactions.md) | All 13 built-in interaction types with examples |
+| [Widgets](docs/widgets.md) | All 9 modal widgets with full API reference |
 | [Testing](docs/testing.md) | Testing interactions and shells without a real terminal |
+| [Contributing](CONTRIBUTING.md) | Test commands, PYTHONPATH setup, running examples, adding interactions/widgets |
 
 Also see the panelmark core docs for the layout language and custom interaction protocol:
 
@@ -134,6 +135,7 @@ Also see the panelmark core docs for the layout language and custom interaction 
 | [Shell Language](../panelmark/docs/shell-language.md) | ASCII-art layout syntax reference |
 | [Draw Commands](../panelmark/docs/draw-commands.md) | `DrawCommand`, `RenderContext`, style dict |
 | [Custom Interactions](../panelmark/docs/custom-interactions.md) | Implementing the `Interaction` ABC |
+| [Renderer Boundary](../panelmark/docs/renderer-boundary.md) | What `panelmark` owns vs what `panelmark-tui` owns; the render contract |
 
 ---
 

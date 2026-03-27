@@ -1,7 +1,7 @@
 import pytest
 from panelmark_tui.testing import MockTerminal, make_key
 from panelmark_tui.interactions import (
-    MenuFunction, MenuReturn, MenuHybrid,
+    MenuFunction, MenuReturn,
     TextBox, ListView, SubList, CheckBox, Function, FormInput
 )
 from panelmark.draw import RenderContext, WriteCmd, FillCmd, CursorCmd
@@ -114,29 +114,30 @@ class TestMenuFunction:
         assert any(isinstance(c, WriteCmd) for c in cmds)
 
 
-class TestMenuHybrid:
-    def test_callable_item_calls_function(self):
-        called = []
-        m = MenuHybrid({'func': lambda s: called.append(True), 'val': 42})
-        m._shell = 'shell'
-        m.handle_key('KEY_ENTER')
-        assert called == [True]
+    def test_signal_return_false_by_default(self):
+        m = MenuFunction({'Action': lambda s: None})
         should_exit, _ = m.signal_return()
         assert should_exit is False
 
-    def test_value_item_signals_exit(self):
-        m = MenuHybrid({'func': lambda s: None, 'val': 42})
-        m.handle_key('KEY_DOWN')
+    def test_signal_return_true_after_callback_sets_wants_exit(self):
+        sentinel = object()
+        def _cb(sh):
+            m._wants_exit = True
+            m._exit_value = sentinel
+        m = MenuFunction({'Go': _cb})
         m.handle_key('KEY_ENTER')
         should_exit, rv = m.signal_return()
         assert should_exit is True
-        assert rv == 42
+        assert rv is sentinel
 
-    def test_render_returns_commands(self):
-        m = MenuHybrid({'A': lambda s: None, 'B': 99})
-        cmds = m.render(ctx(), focused=True)
-        assert isinstance(cmds, list)
-        assert any(isinstance(c, WriteCmd) for c in cmds)
+    def test_wants_exit_cleared_on_next_key(self):
+        def _cb(sh):
+            m._wants_exit = True
+        m = MenuFunction({'Go': _cb})
+        m.handle_key('KEY_ENTER')
+        m.handle_key('KEY_DOWN')   # next navigation key clears it
+        should_exit, _ = m.signal_return()
+        assert should_exit is False
 
 
 class TestTextBox:

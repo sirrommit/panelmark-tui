@@ -15,6 +15,28 @@ def _run_headless(sh, term, keys=("\x1b",)):
     return sh.run()
 
 
+def _make_hello_shell(term):
+    """Build the hello.py shell with MockTerminal, mirroring main()."""
+    from examples.hello import LAYOUT, say_hello, show_about
+    from panelmark_tui import Shell
+    from panelmark_tui.interactions import MenuFunction, StatusMessage
+
+    sh = Shell(LAYOUT, _terminal=term)
+
+    def _quit(sh_inner):
+        menu._wants_exit = True
+        menu._exit_value = None
+
+    menu = MenuFunction({
+        "Say Hello": say_hello,
+        "About":     show_about,
+        "Quit":      _quit,
+    })
+    sh.assign("menu", menu)
+    sh.assign("status", StatusMessage())
+    return sh
+
+
 # ---------------------------------------------------------------------------
 # hello.py
 # ---------------------------------------------------------------------------
@@ -26,53 +48,21 @@ class TestHelloSmoke:
 
     def test_layout_and_wiring(self):
         """Shell parses LAYOUT and assign() calls succeed without errors."""
-        from examples.hello import LAYOUT, say_hello, show_about
-        from panelmark_tui import Shell
-        from panelmark_tui.interactions import MenuHybrid, StatusMessage
-
         term = MockTerminal(width=80, height=24)
-        sh = Shell(LAYOUT, _terminal=term)
-        sh.assign("menu", MenuHybrid({
-            "Say Hello": say_hello,
-            "About":     show_about,
-            "Quit":      "quit",
-        }))
-        sh.assign("status", StatusMessage())
+        _make_hello_shell(term)
 
     def test_quit_exits_cleanly(self):
-        """Selecting Quit (third item) causes sh.run() to return 'quit'."""
-        from examples.hello import LAYOUT, say_hello, show_about
-        from panelmark_tui import Shell
-        from panelmark_tui.interactions import MenuHybrid, StatusMessage
-
+        """Selecting Quit (third item) causes sh.run() to return."""
         term = MockTerminal(width=80, height=24)
-        sh = Shell(LAYOUT, _terminal=term)
-        sh.assign("menu", MenuHybrid({
-            "Say Hello": say_hello,
-            "About":     show_about,
-            "Quit":      "quit",
-        }))
-        sh.assign("status", StatusMessage())
-
+        sh = _make_hello_shell(term)
         # Navigate down twice to "Quit", then Enter
         result = _run_headless(sh, term, ["KEY_DOWN", "KEY_DOWN", "KEY_ENTER"])
-        assert result == "quit"
+        assert result is None
 
     def test_escape_exits(self):
         """Pressing Escape causes sh.run() to return without error."""
-        from examples.hello import LAYOUT, say_hello, show_about
-        from panelmark_tui import Shell
-        from panelmark_tui.interactions import MenuHybrid, StatusMessage
-
         term = MockTerminal(width=80, height=24)
-        sh = Shell(LAYOUT, _terminal=term)
-        sh.assign("menu", MenuHybrid({
-            "Say Hello": say_hello,
-            "About":     show_about,
-            "Quit":      "quit",
-        }))
-        sh.assign("status", StatusMessage())
-
+        sh = _make_hello_shell(term)
         result = _run_headless(sh, term, ["\x1b"])
         assert result is None
 
@@ -86,16 +76,16 @@ class TestTaskManagerSmoke:
         """examples.task_manager can be imported without error."""
         import examples.task_manager  # noqa: F401
 
-    def test_layout_and_wiring(self, monkeypatch):
+    def test_layout_and_wiring(self):
         """Shell parses LAYOUT and all assign() calls succeed without errors."""
         import examples.task_manager as tm
         from panelmark_tui import Shell
-        from panelmark_tui.interactions import ListView, MenuHybrid, StatusMessage
+        from panelmark_tui.interactions import ListView, MenuFunction, StatusMessage
 
         term = MockTerminal(width=80, height=24)
         sh = Shell(tm.LAYOUT, _terminal=term)
 
-        actions_menu = MenuHybrid({
+        actions_menu = MenuFunction({
             "Add": tm._add_task, "Edit": tm._edit_task,
             "Delete": tm._delete_task, "Filter": tm._filter_tasks,
             "Sort": tm._sort_tasks, "Export": tm._export_tasks,
@@ -104,18 +94,18 @@ class TestTaskManagerSmoke:
         sh.assign("actions", actions_menu)
         tm._rebuild_task_menu(sh)
         sh.assign("detail", ListView(["(select a task to see details)"]))
-        sh.assign("status", StatusMessage())
+        sh.assign("status", tm.StatusMessage())
 
-    def test_escape_exits(self, monkeypatch):
+    def test_escape_exits(self):
         """Pressing Escape causes sh.run() to return without error."""
         import examples.task_manager as tm
         from panelmark_tui import Shell
-        from panelmark_tui.interactions import ListView, MenuHybrid, StatusMessage
+        from panelmark_tui.interactions import ListView, MenuFunction, StatusMessage
 
         term = MockTerminal(width=80, height=24)
         sh = Shell(tm.LAYOUT, _terminal=term)
 
-        actions_menu = MenuHybrid({
+        actions_menu = MenuFunction({
             "Add": tm._add_task, "Edit": tm._edit_task,
             "Delete": tm._delete_task, "Filter": tm._filter_tasks,
             "Sort": tm._sort_tasks, "Export": tm._export_tasks,
@@ -133,10 +123,8 @@ class TestTaskManagerSmoke:
         """Selecting Quit → confirming causes sh.run() to exit cleanly."""
         import examples.task_manager as tm
         from panelmark_tui import Shell
-        from panelmark_tui.interactions import ListView, StatusMessage
-        from panelmark_tui.interactions import MenuHybrid
+        from panelmark_tui.interactions import ListView, MenuFunction, StatusMessage
 
-        # Reset shared module state so this test is independent
         monkeypatch.setattr(tm, "_state", {"current_task": None})
 
         term = MockTerminal(width=80, height=24)
@@ -153,7 +141,7 @@ class TestTaskManagerSmoke:
                 actions_menu._wants_exit = True
                 actions_menu._exit_value = None
 
-        actions_menu = MenuHybrid({
+        actions_menu = MenuFunction({
             "Add": tm._add_task, "Edit": tm._edit_task,
             "Delete": tm._delete_task, "Filter": tm._filter_tasks,
             "Sort": tm._sort_tasks, "Export": tm._export_tasks,

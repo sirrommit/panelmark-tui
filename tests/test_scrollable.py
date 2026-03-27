@@ -3,7 +3,7 @@ and for ListView / SubList display-only scrolling."""
 
 import pytest
 from panelmark_tui.testing import make_key
-from panelmark_tui.interactions import MenuFunction, MenuReturn, MenuHybrid, CheckBox
+from panelmark_tui.interactions import MenuFunction, MenuReturn, CheckBox
 from panelmark_tui.interactions.list_view import ListView, SubList
 from panelmark_tui.interactions.scrollable import _list_nav
 from panelmark.draw import RenderContext, WriteCmd, FillCmd
@@ -105,20 +105,6 @@ class TestMenuFunctionScroll:
 
 
 # ---------------------------------------------------------------------------
-# MenuHybrid scrolling
-# ---------------------------------------------------------------------------
-
-class TestMenuHybridScroll:
-    def test_scroll_offset_advances(self):
-        items = {f'Item {i}': i for i in range(10)}
-        m = MenuHybrid(items)
-        prime(m, 4)
-        for _ in range(8):
-            m.handle_key('KEY_DOWN')
-        assert m._active_index == 8
-        assert m._active_index - m._scroll_offset < 4
-
-
 # ---------------------------------------------------------------------------
 # CheckBox scrolling
 # ---------------------------------------------------------------------------
@@ -428,34 +414,6 @@ class TestMenuFunctionPaging:
 
 
 # ---------------------------------------------------------------------------
-# Paging keys in MenuHybrid
-# ---------------------------------------------------------------------------
-
-class TestMenuHybridPaging:
-    def test_page_down_advances(self):
-        items = {f'I{i}': i for i in range(20)}
-        m = MenuHybrid(items)
-        prime(m, 5)
-        m.handle_key('KEY_NPAGE')
-        assert m._active_index == 5
-
-    def test_home_resets(self):
-        items = {f'I{i}': i for i in range(20)}
-        m = MenuHybrid(items)
-        prime(m, 5)
-        for _ in range(15):
-            m.handle_key('KEY_DOWN')
-        m.handle_key('KEY_HOME')
-        assert m._active_index == 0
-
-    def test_end_jumps_to_last(self):
-        items = {f'I{i}': i for i in range(20)}
-        m = MenuHybrid(items)
-        prime(m, 5)
-        m.handle_key('KEY_END')
-        assert m._active_index == 19
-
-
 # ---------------------------------------------------------------------------
 # Paging keys in CheckBox
 # ---------------------------------------------------------------------------

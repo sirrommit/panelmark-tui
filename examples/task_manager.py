@@ -30,7 +30,6 @@ from panelmark_tui.interactions import (
     FormInput,
     ListView,
     MenuFunction,
-    MenuHybrid,
     StatusMessage,
 )
 from panelmark_tui.widgets import (
@@ -431,7 +430,7 @@ def main():
     sh = Shell(LAYOUT)
 
     # _quit is defined here so it can capture actions_menu by closure.
-    # MenuHybrid.signal_return() checks _wants_exit after each callback
+    # MenuFunction.signal_return() checks _wants_exit after each callback
     # returns, so setting it inside the callback exits the shell cleanly.
     def _quit(sh):
         """Show a confirmation dialog; if confirmed, signal the shell to exit."""
@@ -444,7 +443,7 @@ def main():
             actions_menu._wants_exit = True
             actions_menu._exit_value = None
 
-    actions_menu = MenuHybrid({
+    actions_menu = MenuFunction({
         "Add":    _add_task,
         "Edit":   _edit_task,
         "Delete": _delete_task,
