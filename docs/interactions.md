@@ -312,6 +312,12 @@ full page; `Home`/`End` to jump to the first/last item; `Space` or `Enter` to to
 
 **Value:** `dict[str, bool]` — label → checked state for all items.
 
+> **Prefer `RadioList` for single-select.**  `CheckBox(mode="single")` is supported
+> but returns a `dict[str, bool]`, which is harder to work with than the plain value
+> that `RadioList.get_value()` and `signal_return()` return.  Use
+> `CheckBox(mode="single")` only when you already have a checked-state dict as input
+> or need the checkbox visual style specifically.
+
 ---
 
 ## RadioList

@@ -62,18 +62,18 @@ and the target interaction matrix.
 
 ### Phase 4 — Align selector family docs and tests
 
-- [ ] Verify and document `MenuReturn`: `get_value()` = highlighted label,
+- [x] Verify and document `MenuReturn`: `get_value()` = highlighted label,
       `signal_return()` = mapped payload.
-- [ ] Verify and document `RadioList`: `get_value()` = selected value,
+- [x] Verify and document `RadioList`: `get_value()` = selected value,
       `signal_return()` = same value on accept.
-- [ ] Verify and document `CheckBox`: `get_value()` = full checked-state dict,
+- [x] Verify and document `CheckBox`: `get_value()` = full checked-state dict,
       no `signal_return()`.
-- [ ] Verify and document `TreeView`: `get_value()` = highlighted path tuple,
+- [x] Verify and document `TreeView`: `get_value()` = highlighted path tuple,
       `signal_return()` = path on leaf accept.
-- [ ] Verify and document `TableView`: `get_value()` = active row index,
+- [x] Verify and document `TableView`: `get_value()` = active row index,
       no `signal_return()` by default.
-- [ ] Add round-trip `get_value()` / `set_value()` tests for each of the above.
-- [ ] Add doc note that `RadioList` is the preferred single-select control;
+- [x] Add round-trip `get_value()` / `set_value()` tests for each of the above.
+- [x] Add doc note that `RadioList` is the preferred single-select control;
       `CheckBox(mode="single")` is supported but not the recommended path.
 
 ### Phase 5 — Display interactions and escape-hatch clarification

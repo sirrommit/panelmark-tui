@@ -2,7 +2,8 @@ import pytest
 from panelmark_tui.testing import MockTerminal, make_key
 from panelmark_tui.interactions import (
     MenuFunction, MenuReturn,
-    TextBox, ListView, CheckBox, Function, FormInput
+    TextBox, ListView, CheckBox, Function, FormInput,
+    RadioList, TreeView, TableView,
 )
 from panelmark.draw import RenderContext, WriteCmd, FillCmd, CursorCmd
 
@@ -65,6 +66,22 @@ class TestMenuReturn:
         m = MenuReturn({'A': 1, 'B': 2, 'C': 3})
         m.set_value('C')
         assert m.get_value() == 'C'
+
+    def test_round_trip_get_set_value(self):
+        m = MenuReturn({'A': 1, 'B': 2, 'C': 3})
+        m.handle_key('KEY_DOWN')
+        label = m.get_value()
+        m.set_value(label)
+        assert m.get_value() == label
+
+    def test_signal_return_returns_mapped_payload_not_label(self):
+        m = MenuReturn({'Alpha': 'payload_a', 'Beta': 'payload_b'})
+        m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_ENTER')
+        fired, val = m.signal_return()
+        assert fired is True
+        assert val == 'payload_b'
+        assert val != 'Beta'
 
     def test_render_returns_commands(self):
         m = MenuReturn({'Option A': 'a', 'Option B': 'b'})
@@ -412,6 +429,18 @@ class TestCheckBox:
         cb.set_value({'a': True})
         assert cb.get_value() == {'a': True}
 
+    def test_round_trip_get_set_value(self):
+        cb = CheckBox({'x': True, 'y': False, 'z': True})
+        state = cb.get_value()
+        cb.set_value(state)
+        assert cb.get_value() == state
+
+    def test_signal_return_never_fires(self):
+        cb = CheckBox({'a': False, 'b': False})
+        cb.handle_key(' ')
+        fired, _ = cb.signal_return()
+        assert fired is False
+
     def test_render_returns_commands(self):
         cb = CheckBox({'opt1': True, 'opt2': False})
         cmds = cb.render(ctx(), focused=True)
@@ -612,3 +641,211 @@ class TestFormInput:
         form = FormInput({'name': {'type': 'str', 'descriptor': 'Name'}})
         form.set_value({'name': 'Bob'})
         assert form.get_value()['name'] == 'Bob'
+
+
+class TestRadioList:
+    def _items(self):
+        return {'Small': 's', 'Medium': 'm', 'Large': 'l'}
+
+    def test_initial_value_is_first_item_value(self):
+        r = RadioList(self._items())
+        assert r.get_value() == 's'
+
+    def test_navigate_down_changes_value(self):
+        r = RadioList(self._items())
+        changed, val = r.handle_key('KEY_DOWN')
+        assert changed is True
+        assert val == 'm'
+
+    def test_navigate_up_clamps_at_top(self):
+        r = RadioList(self._items())
+        r.handle_key('KEY_UP')
+        assert r.get_value() == 's'
+
+    def test_enter_fires_signal_return(self):
+        r = RadioList(self._items())
+        r.handle_key('KEY_DOWN')
+        r.handle_key('KEY_ENTER')
+        fired, val = r.signal_return()
+        assert fired is True
+        assert val == 'm'
+
+    def test_space_fires_signal_return(self):
+        r = RadioList(self._items())
+        r.handle_key(' ')
+        fired, val = r.signal_return()
+        assert fired is True
+        assert val == 's'
+
+    def test_signal_return_initially_false(self):
+        r = RadioList(self._items())
+        fired, _ = r.signal_return()
+        assert fired is False
+
+    def test_signal_return_returns_value_not_label(self):
+        r = RadioList({'Alpha': 'payload_a', 'Beta': 'payload_b'})
+        r.handle_key('KEY_DOWN')
+        r.handle_key('KEY_ENTER')
+        fired, val = r.signal_return()
+        assert fired is True
+        assert val == 'payload_b'
+        assert val != 'Beta'
+
+    def test_set_value_moves_cursor(self):
+        r = RadioList(self._items())
+        r.set_value('l')
+        assert r.get_value() == 'l'
+
+    def test_round_trip_get_set_value(self):
+        r = RadioList(self._items())
+        r.handle_key('KEY_DOWN')
+        val = r.get_value()
+        r.set_value(val)
+        assert r.get_value() == val
+
+    def test_render_returns_commands(self):
+        r = RadioList(self._items())
+        cmds = r.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_shows_radio_markers(self):
+        r = RadioList(self._items())
+        cmds = r.render(ctx(width=30, height=5), focused=False)
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd))
+        assert '(●)' in text
+        assert '( )' in text
+
+
+class TestTreeView:
+    def _tree(self):
+        return {
+            'docs': {'readme.txt': None, 'guide.txt': None},
+            'src': {'main.py': None},
+            'LICENSE': None,
+        }
+
+    def test_initial_value_is_first_visible_item(self):
+        tv = TreeView(self._tree())
+        # Top-level items are all branches/leaves; first is 'docs' branch
+        val = tv.get_value()
+        assert val == ('docs',)
+
+    def test_navigate_down_changes_value(self):
+        tv = TreeView(self._tree())
+        changed, val = tv.handle_key('KEY_DOWN')
+        assert changed is True
+        assert val == ('src',)
+
+    def test_branch_toggle_no_signal_return(self):
+        tv = TreeView(self._tree())
+        tv.handle_key('KEY_ENTER')   # expand 'docs'
+        fired, _ = tv.signal_return()
+        assert fired is False
+
+    def test_leaf_select_fires_signal_return(self):
+        tv = TreeView(self._tree(), initially_expanded=True)
+        # Navigate to first leaf under 'docs'
+        tv.handle_key('KEY_DOWN')   # -> docs/readme.txt
+        tv.handle_key('KEY_ENTER')
+        fired, val = tv.signal_return()
+        assert fired is True
+        assert val == ('docs', 'readme.txt')
+
+    def test_signal_return_initially_false(self):
+        tv = TreeView(self._tree())
+        fired, _ = tv.signal_return()
+        assert fired is False
+
+    def test_set_value_expands_ancestors(self):
+        tv = TreeView(self._tree())
+        tv.set_value(('docs', 'guide.txt'))
+        assert tv.get_value() == ('docs', 'guide.txt')
+
+    def test_round_trip_get_set_value(self):
+        tv = TreeView(self._tree(), initially_expanded=True)
+        tv.handle_key('KEY_DOWN')
+        val = tv.get_value()
+        tv.set_value(val)
+        assert tv.get_value() == val
+
+    def test_empty_tree_get_value_is_none(self):
+        tv = TreeView({})
+        assert tv.get_value() is None
+
+    def test_render_returns_commands(self):
+        tv = TreeView(self._tree())
+        cmds = tv.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+
+class TestTableView:
+    def _table(self):
+        return TableView(
+            columns=[('Name', 10), ('Score', 6)],
+            rows=[['Alice', '95'], ['Bob', '72'], ['Carol', '88']],
+        )
+
+    def test_initial_value_is_zero(self):
+        t = self._table()
+        assert t.get_value() == 0
+
+    def test_navigate_down_changes_value(self):
+        t = self._table()
+        changed, val = t.handle_key('KEY_DOWN')
+        assert changed is True
+        assert val == 1
+
+    def test_navigate_up_clamps_at_zero(self):
+        t = self._table()
+        t.handle_key('KEY_UP')
+        assert t.get_value() == 0
+
+    def test_navigate_clamps_at_last_row(self):
+        t = self._table()
+        for _ in range(10):
+            t.handle_key('KEY_DOWN')
+        assert t.get_value() == 2
+
+    def test_signal_return_never_fires(self):
+        t = self._table()
+        t.handle_key('KEY_DOWN')
+        fired, _ = t.signal_return()
+        assert fired is False
+
+    def test_set_value_moves_cursor(self):
+        t = self._table()
+        t.set_value(2)
+        assert t.get_value() == 2
+
+    def test_set_value_clamps_high(self):
+        t = self._table()
+        t.set_value(999)
+        assert t.get_value() == 2
+
+    def test_set_value_clamps_low(self):
+        t = self._table()
+        t.handle_key('KEY_DOWN')
+        t.set_value(-5)
+        assert t.get_value() == 0
+
+    def test_round_trip_get_set_value(self):
+        t = self._table()
+        t.handle_key('KEY_DOWN')
+        idx = t.get_value()
+        t.set_value(idx)
+        assert t.get_value() == idx
+
+    def test_render_returns_commands(self):
+        t = self._table()
+        cmds = t.render(ctx(), focused=True)
+        assert isinstance(cmds, list)
+        assert any(isinstance(c, WriteCmd) for c in cmds)
+
+    def test_render_header_appears(self):
+        t = self._table()
+        cmds = t.render(ctx(width=30, height=5), focused=False)
+        text = ''.join(c.text for c in cmds if isinstance(c, WriteCmd) and c.row == 0)
+        assert 'Name' in text
+        assert 'Score' in text
