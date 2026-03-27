@@ -3,16 +3,23 @@ from panelmark.draw import DrawCommand, RenderContext
 
 
 class Function(Interaction):
-    """Custom interaction that delegates to a user-provided handler.
+    """Escape-hatch interaction for custom rendering and key handling.
+
+    ``Function`` does **not** follow the standard ``get_value()`` /
+    ``set_value()`` / ``signal_return()`` contract that the built-in
+    interactions share.  It is intended for low-level, one-off behaviour where
+    none of the built-in interactions fit.  Do not use it as a model when
+    designing new interactions.
+
+    ``get_value()`` returns an internal ``_value`` that the handler does not
+    manage through a first-class API.  ``signal_return()`` is not implemented —
+    ``Function`` never causes the shell to exit on its own.
 
     The handler is called with ``(shell, context, key)`` where *context* is a
     ``RenderContext`` on render calls (``key=None``) and on key events.
 
     The handler may return a ``list[DrawCommand]`` to draw content, or
-    ``None`` to produce no output.  Handlers written before the draw command
-    migration that performed side-effect drawing can return ``None`` and
-    continue to work, though they will produce no visible output under the new
-    renderer.  See ``DRAW_MIGRATION.md`` for the upgrade path.
+    ``None`` to produce no output.
     """
 
     def __init__(self, handler):

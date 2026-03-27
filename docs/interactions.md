@@ -1,6 +1,6 @@
 # Built-in Interactions
 
-panelmark-tui provides 11 built-in interaction types, all importable from
+panelmark-tui provides 12 built-in interaction types, all importable from
 `panelmark_tui.interactions`.
 
 ```python
@@ -10,13 +10,65 @@ from panelmark_tui.interactions import (
     ListView,
     CheckBox,
     Function,
-    FormInput,
+    FormInput, DataclassFormInteraction,
     StatusMessage,
     TreeView,
     RadioList,
     TableView,
 )
 ```
+
+---
+
+## API Contract
+
+Every interaction follows a three-concept model.
+
+### Current logical state
+
+The value that best represents what this interaction currently contains or has
+selected right now.  Always accessible via `get_value()` and restorable via
+`set_value()`.
+
+Examples: text in a text box; checked-state mapping in a checkbox list; active
+row path in a tree; active radio value; current status payload.
+
+### Submitted result
+
+A value produced when the user explicitly accepts or submits — pressing Enter
+on a menu item, activating a form's submit action, etc.  Returned through
+`signal_return()`, not through `get_value()`.
+
+Examples: the payload selected from a menu; the accepted result of a form
+submission.
+
+### Display model
+
+The backing content of a display-only interaction.  Display-only interactions
+expose their display model through `get_value()` when that is the only
+meaningful current state.
+
+Examples: the list of strings in `ListView`; the rows and columns in
+`TableView`.
+
+---
+
+## Interaction matrix
+
+| Interaction | `get_value()` | `set_value()` | `signal_return()` |
+|---|---|---|---|
+| `MenuFunction` | current highlighted label | highlight label | none |
+| `MenuReturn` | current highlighted label | highlight label | mapped payload on accept |
+| `CheckBox` | full checked-state dict | replace checked-state dict | none |
+| `RadioList` | current selected value | select by value | selected value on accept |
+| `TreeView` | current highlighted path tuple | highlight path | path on leaf accept |
+| `TableView` | current active row index | set active row index | none |
+| `TextBox` | current text | replace text | none (submit mode: text on accept) |
+| `ListView` | current items list | replace items list | none |
+| `StatusMessage` | current `(style, message)` or `None` | replace status payload | none |
+| `FormInput` | current field-state dict | replace field-state dict | submitted dict on submit |
+| `DataclassFormInteraction` | current field-state dict | replace field-state dict | action result on submit |
+| `Function` | escape hatch — see below | escape hatch | escape hatch |
 
 ---
 
@@ -330,8 +382,15 @@ jump by one page; `Home`/`End` to jump to the first/last row.
 
 ## Function
 
-An escape hatch for custom rendering and key handling. The handler function is called on
-every render and every keypress.
+**Escape hatch.** `Function` does not follow the standard `get_value()` /
+`set_value()` / `signal_return()` contract.  It exists for custom low-level
+rendering and key handling where none of the built-in interactions fit.  Do not
+use it as a model when designing new interactions.
+
+`get_value()` returns an internal `_value` that the handler does not manage
+through a first-class API.  `set_value()` sets that same private value.
+`signal_return()` is not implemented — `Function` never causes the shell to
+exit on its own.
 
 ```python
 Function(handler: Callable)

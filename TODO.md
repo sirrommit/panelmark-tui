@@ -35,9 +35,9 @@ and the target interaction matrix.
 
 ### Phase 1 — Document the contract
 
-- [ ] Add "Current logical state vs submitted result" definitions to `docs/interactions.md`.
-- [ ] Add the interaction matrix table (from PROPOSAL.md) to `docs/interactions.md`.
-- [ ] Mark `Function` as an escape hatch in its docstring and in `docs/interactions.md`.
+- [x] Add "Current logical state vs submitted result" definitions to `docs/interactions.md`.
+- [x] Add the interaction matrix table (from PROPOSAL.md) to `docs/interactions.md`.
+- [x] Mark `Function` as an escape hatch in its docstring and in `docs/interactions.md`.
 
 ### Phase 2 — Fix `MenuFunction`
 
