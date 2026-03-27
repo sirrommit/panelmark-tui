@@ -41,13 +41,13 @@ and the target interaction matrix.
 
 ### Phase 2 — Fix `MenuFunction`
 
-- [ ] Change `MenuFunction.get_value()` to return the currently highlighted label
+- [x] Change `MenuFunction.get_value()` to return the currently highlighted label
       (currently returns last activated label).
-- [ ] Add `MenuFunction.last_activated` property to preserve the old behaviour for
+- [x] Add `MenuFunction.last_activated` property to preserve the old behaviour for
       callers that need it.
-- [ ] Update `examples/hello.py` and `examples/task_manager.py` if they rely on
+- [x] Update `examples/hello.py` and `examples/task_manager.py` if they rely on
       old `get_value()` semantics.
-- [ ] Add / update tests: `get_value()` reflects current highlight; `last_activated`
+- [x] Add / update tests: `get_value()` reflects current highlight; `last_activated`
       reflects last callback invocation; round-trip `get_value()` / `set_value()`.
 
 ### Phase 3 — `TextBox` submit mode

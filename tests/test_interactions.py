@@ -87,9 +87,19 @@ class TestMenuReturn:
 
 
 class TestMenuFunction:
-    def test_initial_value_none(self):
+    def test_initial_value_is_first_label(self):
         m = MenuFunction({'Action': lambda s: None})
+        assert m.get_value() == 'Action'
+
+    def test_initial_value_empty_menu(self):
+        m = MenuFunction({})
         assert m.get_value() is None
+
+    def test_get_value_reflects_highlight(self):
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
+        assert m.get_value() == 'A'
+        m.handle_key('KEY_DOWN')
+        assert m.get_value() == 'B'
 
     def test_navigate_down(self):
         m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
@@ -105,14 +115,50 @@ class TestMenuFunction:
     def test_enter_sets_last_activated(self):
         m = MenuFunction({'Action': lambda s: None})
         m.handle_key('KEY_ENTER')
-        assert m.get_value() == 'Action'
+        assert m.last_activated == 'Action'
+
+    def test_get_value_stable_after_activation(self):
+        """Activating an item should not change the highlight."""
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
+        m.handle_key('KEY_DOWN')   # highlight B
+        m.handle_key('KEY_ENTER')  # activate B
+        assert m.get_value() == 'B'
+
+    def test_last_activated_none_before_any_activation(self):
+        m = MenuFunction({'A': lambda s: None})
+        assert m.last_activated is None
+
+    def test_last_activated_tracks_most_recent(self):
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
+        m.handle_key('KEY_ENTER')   # activate A
+        assert m.last_activated == 'A'
+        m.handle_key('KEY_DOWN')
+        m.handle_key('KEY_ENTER')   # activate B
+        assert m.last_activated == 'B'
+
+    def test_set_value_moves_highlight(self):
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None, 'C': lambda s: None})
+        m.set_value('C')
+        assert m.get_value() == 'C'
+
+    def test_set_value_does_not_touch_last_activated(self):
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None})
+        m.set_value('B')
+        assert m.last_activated is None
+
+    def test_round_trip_get_set_value(self):
+        m = MenuFunction({'A': lambda s: None, 'B': lambda s: None, 'C': lambda s: None})
+        m.handle_key('KEY_DOWN')
+        val = m.get_value()
+        m.handle_key('KEY_DOWN')   # move away
+        m.set_value(val)           # restore
+        assert m.get_value() == val
 
     def test_render_returns_commands(self):
         m = MenuFunction({'Option': lambda s: None})
         cmds = m.render(ctx(), focused=True)
         assert isinstance(cmds, list)
         assert any(isinstance(c, WriteCmd) for c in cmds)
-
 
     def test_signal_return_false_by_default(self):
         m = MenuFunction({'Action': lambda s: None})

@@ -3,7 +3,12 @@ from .scrollable import _ScrollableList, _list_nav
 
 
 class MenuFunction(_ScrollableList):
-    """Menu where each item calls a function when selected."""
+    """Menu where each item calls a function when selected.
+
+    ``get_value()`` returns the currently highlighted label (current logical
+    state).  Use ``last_activated`` to read which label was most recently
+    invoked.
+    """
 
     def __init__(self, items: dict):
         """
@@ -49,13 +54,21 @@ class MenuFunction(_ScrollableList):
         return False, self.get_value()
 
     def get_value(self):
+        """Return the currently highlighted label (current logical state)."""
+        if self._labels:
+            return self._labels[self._active_index]
+        return None
+
+    @property
+    def last_activated(self):
+        """The label most recently invoked by the user, or ``None``."""
         return self._last_activated
 
     def set_value(self, value) -> None:
+        """Highlight the item with the given label."""
         if value is not None and value in self._labels:
             self._active_index = self._labels.index(value)
             self._clamp_scroll()
-        self._last_activated = value
 
     def signal_return(self) -> tuple:
         if self._wants_exit:
