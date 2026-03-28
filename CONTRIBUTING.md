@@ -29,8 +29,6 @@ pytest -q
 
 No `PYTHONPATH` manipulation needed — `panelmark` has no local dependencies.
 
-**Expected:** 136 passed.
-
 ### `panelmark-tui` tests
 
 ```bash
@@ -48,7 +46,13 @@ PYTHONPATH=/home/sirrommit/claude_play/panelmark-tui:/home/sirrommit/claude_play
 **Why both paths?** `panelmark_tui` imports from `panelmark`; neither is installed as
 a package in the venv, so both source roots must be on `PYTHONPATH`.
 
-**Expected:** 388 passed.
+Both test suites should pass cleanly.  Use the `Makefile` targets in `panelmark-tui` for
+convenience:
+
+```bash
+make test        # panelmark-tui tests only
+make test-all    # panelmark-tui tests with full PYTHONPATH
+```
 
 ### Running both together
 
@@ -82,35 +86,66 @@ requires a real tty.
 
 ## Architecture overview
 
-See [`panelmark/docs/renderer-boundary.md`](../panelmark/docs/renderer-boundary.md)
-for a concise description of what `panelmark` owns, what `panelmark-tui` owns, and
-how the two packages interact.
+See [`docs/renderer-implementation.md`](docs/renderer-implementation.md) for how
+`panelmark-tui` satisfies the `panelmark` renderer specification.
+
+For the normative renderer contract and compatibility levels, see the renderer-spec docs
+in the core repo starting at
+[`../panelmark/docs/renderer-spec/overview.md`](../panelmark/docs/renderer-spec/overview.md).
 
 ---
 
 ## Adding a new interaction type
 
+Interactions are single-region, reusable UI behaviors.  Use an interaction when your
+component lives inside one shell region and handles its own rendering and key events.
+
 1. Create `panelmark_tui/interactions/<name>.py` — subclass `panelmark.Interaction`.
 2. Implement `render(context, focused)` → `list[DrawCommand]`.
 3. Implement `handle_key(key)` → `(changed, value)`.
-4. Implement `get_value()`, `set_value(value)`, and `is_focusable`.
-5. Export from `panelmark_tui/interactions/__init__.py`.
-6. Add tests in `tests/` and document in `docs/interactions.md`.
+4. Implement `get_value()`, `set_value(value)`, and `signal_return()`.
+5. Set `is_focusable = True` if the interaction should receive keyboard focus.
+6. Export from `panelmark_tui/interactions/__init__.py`.
+7. Add tests in `tests/` and document in `docs/interactions.md`.
 
-See [`panelmark/docs/custom-interactions.md`](../panelmark/docs/custom-interactions.md)
-for the full `Interaction` ABC contract.
+See [`../panelmark/docs/custom-interactions.md`](../panelmark/docs/custom-interactions.md)
+for the full `Interaction` ABC contract and the interaction API semantics.
 
 ---
 
-## Adding a new modal widget
+## Adding a shell-composed widget
 
-Widgets are pre-built `Shell` instances.  Follow the pattern in any existing widget
-(e.g. `panelmark_tui/widgets/alert.py`):
+Shell-composed widgets build a small `Shell` layout internally and run it as a modal
+overlay.  Use this pattern for multi-region TUI flows: dialogs with a message area plus
+buttons, forms with multiple fields, picker UIs with two panes, etc.
 
-1. Build a layout string and assign interactions in `__init__`.
-2. Expose a `.show(parent_shell=None, ...)` method that calls `Shell.run_modal()`.
-3. Return a meaningful value (or `None` on cancel).
-4. Export from `panelmark_tui/widgets/__init__.py`.
-5. Add tests in `tests/test_widgets.py` using `MockTerminal` and the pattern in
-   [`docs/testing.md`](docs/testing.md).
-6. Document in `docs/widgets.md`.
+1. Subclass `_ModalWidget` from `panelmark_tui.widgets._utils`.
+2. Implement `_build_popup(term)` — construct and wire a `Shell`, return it.
+3. Set `self.width` in `__init__` so the base class can auto-centre the popup.
+4. `.show(parent_shell=...)` is provided by the base class and calls `run_modal()`.
+5. Export from `panelmark_tui/widgets/__init__.py`.
+6. Add tests using `MockTerminal` — see [`docs/testing.md`](docs/testing.md).
+7. Document in `docs/widgets.md`.
+
+See `panelmark_tui/widgets/alert.py` or `panelmark_tui/widgets/confirm.py` as minimal
+reference examples.
+
+---
+
+## Adding a renderer-managed utility widget
+
+Renderer-managed utility widgets (`Progress`, `Toast`, `Spinner`) need their own render
+cycle because they push updates synchronously or dismiss themselves on a timer.  Use this
+pattern only when the standard modal-shell pattern genuinely cannot work — for example
+when the widget must update between keypresses.
+
+These widgets do not follow the `_ModalWidget` base class pattern.  Study the existing
+`Progress` or `Spinner` implementation to understand the lifecycle before writing a new
+one.
+
+Guidelines:
+- Keep the public API consistent with other widgets: a `.show()` method or context-manager.
+- Document explicitly that the widget manages its own render cycle.
+- Document return/cancellation semantics clearly.
+- Export from `panelmark_tui/widgets/__init__.py`.
+- Document in `docs/widgets.md` under the renderer-managed family.

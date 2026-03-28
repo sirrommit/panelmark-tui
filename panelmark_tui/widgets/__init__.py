@@ -1,4 +1,4 @@
-# tui_wysiwyg.widgets — reusable popup widgets built on Shell.run_modal()
+# panelmark_tui.widgets — renderer-side convenience widgets for common TUI tasks
 from .confirm import Confirm
 from .alert import Alert
 from .input_prompt import InputPrompt

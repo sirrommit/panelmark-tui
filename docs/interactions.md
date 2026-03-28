@@ -18,6 +18,12 @@ from panelmark_tui.interactions import (
 )
 ```
 
+These interactions are `panelmark-tui`-specific.  They implement the
+`panelmark.Interaction` ABC, which is defined in the core renderer contract:
+[`../panelmark/docs/renderer-spec/contract.md`](../panelmark/docs/renderer-spec/contract.md).
+For the full ABC interface and guidance on writing custom interactions, see
+[`../panelmark/docs/custom-interactions.md`](../panelmark/docs/custom-interactions.md).
+
 ---
 
 ## API Contract
@@ -133,6 +139,12 @@ sh.assign("menu", menu)
 ```
 
 **Keys:** same navigation as `MenuReturn` (including `Page Up`/`Page Down`/`Home`/`End`).
+
+**`get_value()`:** returns the currently **highlighted** label (not the last invoked one).
+
+**`last_activated`:** read-only property that holds the label most recently invoked by the
+user, or `None` before any item has been activated.  Use this when you need to know which
+callback was last triggered without changing the menu's current state.
 
 ---
 

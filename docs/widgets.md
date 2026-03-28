@@ -1,19 +1,56 @@
-# Modal Widgets
+# Built-in Widgets
 
-panelmark-tui includes nine ready-made modal widgets. Each is a pre-built `Shell` with a
-fixed layout, sensible defaults, and a simple `.show()` method that blocks until the user
-makes a choice.
+panelmark-tui ships 10 built-in widgets. Widgets are renderer-side convenience components
+for common TUI tasks. They are not part of the portable `panelmark` core contract — they
+are specific to the `panelmark-tui` blessed renderer.
 
-All widgets:
+---
+
+## Widget families
+
+### Standard modal dialogs
+
+`Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `DataclassForm`
+
+These are shell-composed widgets. Each builds a small `Shell` internally and runs it as a
+modal overlay. They block until the user makes a choice and return a value (or `None` on
+cancel).
+
+```python
+result = Widget(options...).show(parent_shell=sh)
+```
+
+All modal dialog widgets:
 - Are auto-centred on screen by default
 - Restore the parent shell's display after closing
-- Return `None` on Escape or Ctrl+Q (except `Progress`, `Toast`, `Spinner`)
+- Return `None` on Escape or Ctrl+Q (unless noted otherwise)
 - Accept `parent_shell=sh` to integrate with a running TUI
+
+### Renderer-managed utility overlays
+
+`Progress`, `Toast`, `Spinner`
+
+These widgets manage their own render cycle. `Toast` displays briefly then removes itself;
+`Progress` and `Spinner` use a context-manager pattern where the caller drives updates
+synchronously.
+
+```python
+# Context-manager pattern
+with Progress(title="...", total=n).show(sh) as prog:
+    ...
+```
+
+These widgets always return `None` — cancellation is checked via `.cancelled`.
+
+---
+
+## Import
 
 ```python
 from panelmark_tui.widgets import (
     Confirm, Alert, InputPrompt,
     ListSelect, FilePicker, DatePicker,
+    DataclassForm,
     Progress, Toast, Spinner,
 )
 ```
@@ -104,16 +141,16 @@ if name is not None:
     rename(name)
 ```
 
-**Returns:** the entered text string on OK (may be empty `""`), `None` on
+**Returns:** the entered text string on OK or Enter (may be empty `""`), `None` on
 Cancel/Escape/Ctrl+Q.
 
 **Layout:** 2-row prompt, separator, 2-row text entry, separator, OK/Cancel buttons.
 **Height:** auto-detected (~9 rows).
 
 **Notes:**
-- Focus opens on the text entry box
-- `Enter` in the entry box **inserts a newline** (the box uses extend mode)
-- `Tab` moves focus to the button row; `Enter` on OK then submits
+- Focus opens on the text entry box.
+- `Enter` in the entry box **submits immediately** (the box uses `enter_mode="submit"`).
+- `Tab` also moves focus to the button row if you prefer to use the OK button.
 
 ---
 
@@ -268,6 +305,56 @@ if due_date:
 
 ---
 
+## DataclassForm
+
+Modal form widget driven by a dataclass instance. Presents the dataclass's fields as
+editable form rows with optional action buttons. A thin modal wrapper around
+[`DataclassFormInteraction`](interactions.md#dataclassforminteraction).
+
+```python
+DataclassForm(
+    dc_instance,
+    title: str = "Edit",
+    actions: list | None = None,
+    on_change: callable | None = None,
+    width: int = 60,
+)
+```
+
+```python
+import dataclasses
+from panelmark_tui.widgets import DataclassForm
+
+@dataclasses.dataclass
+class Config:
+    host: str = "localhost"
+    port: int = 8080
+    debug: bool = False
+
+cfg = Config()
+result = DataclassForm(
+    cfg,
+    title="Server Settings",
+    actions=[
+        {"label": "Save", "shortcut": "s",
+         "action": lambda vals: {**vals, "_saved": True}},
+        {"label": "Cancel", "shortcut": "q", "action": lambda vals: None},
+    ],
+).show(parent_shell=sh)
+
+if result and result.get("_saved"):
+    apply_config(result)
+```
+
+**Returns:** a dict of field values on submit, or `None`/`False` depending on the action
+that triggered exit.  Each action's return value becomes the shell exit value.
+
+**When to use the interaction directly:** if you need the form embedded in a larger shell
+(alongside other regions) rather than as a standalone popup, assign
+`DataclassFormInteraction` to a region directly.
+
+---
+
 ## Progress
 
 Displays a progress bar during a long operation. Driven programmatically from the
@@ -306,9 +393,8 @@ with Progress(title="Importing data", total=len(records)).show(sh) as prog:
 **Height:** 9 rows (cancellable) or 7 rows (non-cancellable).
 
 **Notes:**
-- Unlike other widgets, `Progress` does **not** use `run_modal()` — it manages its own
-  render cycle so that `set_progress()` can push updates synchronously without waiting
-  for a keypress.
+- `Progress` manages its own render cycle — `set_progress()` pushes updates
+  synchronously without waiting for a keypress.
 - The bar renders as `[████████░░░░░░] 55%` using Unicode block characters.
 
 ---
@@ -393,8 +479,8 @@ def do_work(sh):
 
 ## Positioning
 
-By default, all widgets are centred on screen. Pass explicit `row`, `col`, `width`, or
-`height` to `show()` to override:
+By default, modal dialog widgets are centred on screen. Pass explicit `row`, `col`, or
+`width` to `.show()` to override position:
 
 ```python
 Alert(message_lines=["Done"]).show(
@@ -405,4 +491,7 @@ Alert(message_lines=["Done"]).show(
 )
 ```
 
-These are forwarded to `Shell.run_modal()`.
+Position overrides are handled by each widget's `.show()` implementation. Modal
+shell-based widgets forward them to their internal `Shell.run_modal()` call.
+Renderer-managed utility widgets (`Progress`, `Toast`, `Spinner`) handle positioning
+in their own render cycle.
