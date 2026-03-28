@@ -89,5 +89,53 @@ and the target interaction matrix.
 
 ## Later work
 
+- [ ] Implement portable `NestedMenu` interaction.
+  - Add `NestedMenu` and `Leaf` to `panelmark_tui/interactions/`.
+  - Export both from [panelmark_tui/interactions/__init__.py](/home/sirrommit/claude_play/panelmark-tui/panelmark_tui/interactions/__init__.py).
+  - Keep the implementation aligned with the portable contract in
+    [portable-library.md](/home/sirrommit/claude_play/panelmark/docs/renderer-spec/portable-library.md).
+  - Recommended TUI presentation: sequential drill-down menu using the existing
+    scrollable-list patterns rather than a flyout.
+  - Support required input forms:
+    - nested dict shorthand
+    - `Leaf(value)` explicit leaf marker
+  - Required normalization / validation rules:
+    - labels are strings
+    - preserve provided order
+    - duplicate sibling labels are malformed input
+    - empty branches are malformed input
+    - empty root is malformed input
+    - `None` is not a valid leaf payload
+  - Decide and document the `panelmark-tui` malformed-input behavior.
+    - The core spec leaves this renderer-defined.
+    - Prefer graceful but non-silent degradation over a silent failure.
+  - Required interaction semantics:
+    - `get_value()` returns the currently highlighted path tuple
+    - `set_value(path)` highlights the exact branch or leaf at that path
+    - `signal_return()` fires only on leaf accept with the mapped payload
+    - accepting a branch descends without submitting
+    - going back from a submenu restores the parent branch highlight
+    - cancelling at root submits nothing
+    - `set_value(get_value())` round-trips cleanly
+  - Implementation guidance:
+    - reuse `_ScrollableList` / `_list_nav` patterns where practical
+    - do not force TUI-specific behavior into the portable API
+    - keep path and normalized-node handling private to the interaction
+    - add focused tests before polishing rendering details
+  - Add tests covering at least:
+    - shorthand nested dict parsing
+    - `Leaf(dict_payload)` handling
+    - duplicate sibling detection
+    - empty-branch / empty-root malformed cases
+    - path round-tripping through `get_value()` / `set_value()`
+    - branch accept descends without `signal_return()`
+    - leaf accept fires `signal_return()` with mapped payload
+    - backtracking from submenu restores branch highlight
+    - root cancel produces no submitted value
+  - Update [docs/interactions.md](/home/sirrommit/claude_play/panelmark-tui/docs/interactions.md) after implementation:
+    - include `NestedMenu` in the built-in interaction list if shipped
+    - mark it as portable
+    - document the chosen TUI malformed-input behavior
+
 - [ ] Consider a `TextAreaPrompt` if there is a real use case that `InputPrompt` does not serve well.
 - [ ] Consider `Tabs`, `CommandPalette`, or a multi-step `Wizard` only after the current widget and interaction APIs are cleaner.

@@ -1,6 +1,6 @@
 # Built-in Interactions
 
-panelmark-tui provides 12 built-in interaction types, all importable from
+panelmark-tui provides 13 built-in interaction types, all importable from
 `panelmark_tui.interactions`.
 
 ```python
@@ -15,6 +15,7 @@ from panelmark_tui.interactions import (
     TreeView,
     RadioList,
     TableView,
+    NestedMenu, Leaf,
 )
 ```
 
@@ -68,6 +69,7 @@ Examples: the list of strings in `ListView`; the rows and columns in
 | `CheckBox` | full checked-state dict | replace checked-state dict | none |
 | `RadioList` | current selected value | select by value | selected value on accept |
 | `TreeView` | current highlighted path tuple | highlight path | path on leaf accept |
+| `NestedMenu` | current highlighted path tuple | navigate to path | mapped payload on leaf accept |
 | `TableView` | current active row index | set active row index | none |
 | `TextBox` | current text | replace text | none (submit mode: text on accept) |
 | `ListView` | current items list | replace items list | none |
@@ -287,6 +289,81 @@ the tree is empty.
 
 **signal_return:** fires with `(True, path_tuple)` when a leaf is activated.
 Branch toggles do not exit the shell.
+
+---
+
+## NestedMenu
+
+> **Portable (proposed):** This interaction is designed to be part of the
+> `panelmark` portable standard library.  See
+> `docs/renderer-spec/proposed-nested-menu.md` in the core repo.
+
+A hierarchical drill-down menu.  Extends `MenuReturn` to arbitrary depth.
+Selecting a branch item descends into it; selecting a leaf item returns its
+mapped value and exits the shell.
+
+```python
+NestedMenu(items: dict)
+```
+
+`items` is a nested dict.  Non-dict values are leaf return values; dict values
+are branches.  Use `Leaf(value)` to wrap a dict as a leaf payload.
+
+```python
+from panelmark_tui.interactions import NestedMenu, Leaf
+
+menu = NestedMenu({
+    "File": {
+        "New":  "file:new",
+        "Open": "file:open",
+        "Save": "file:save",
+    },
+    "Edit": {
+        "Cut":   "edit:cut",
+        "Copy":  "edit:copy",
+        "Paste": "edit:paste",
+    },
+    "Quit": "quit",
+})
+sh.assign("menu", menu)
+result = sh.run()   # e.g. "file:save" or "quit"
+```
+
+To use a dict as a leaf payload::
+
+```python
+NestedMenu({"Export": Leaf({"format": "csv", "delimiter": ","})})
+```
+
+| Key | Action |
+|-----|--------|
+| `↑` / `k` | Move up |
+| `↓` / `j` | Move down |
+| `Page Up` | Jump up one page |
+| `Page Down` | Jump down one page |
+| `Home` | Jump to first item |
+| `End` | Jump to last item |
+| `Enter` / `Space` on branch | Descend into submenu |
+| `Enter` / `Space` on leaf | Accept — shell exits with mapped value |
+| `←` / `h` | Go back to parent level |
+
+**Rendering:** branch items show a `▶` suffix.  When inside a submenu a
+breadcrumb header (`← Parent › Child`) is shown at the top of the region.
+
+**`get_value()`:** path tuple to the currently highlighted item,
+e.g. `('File', 'Save')`.
+
+**`set_value(path)`:** navigate to the item at `path` and highlight it.
+Intermediate ancestors are descended into automatically.  Invalid paths are
+silently ignored.
+
+**`signal_return()`:** `(True, mapped_value)` when a leaf is accepted;
+`(False, None)` otherwise including on branch descent and back navigation.
+
+**Malformed input:** `ValueError` is raised at construction time for empty
+root, empty branch, duplicate sibling labels, or `None` as a leaf payload.
+`Leaf(None)` also raises at construction.  These checks surface bugs
+immediately rather than producing silent runtime failures.
 
 ---
 

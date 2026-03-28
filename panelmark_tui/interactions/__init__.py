@@ -8,6 +8,7 @@ from .status_message import StatusMessage
 from .tree_view import TreeView
 from .radio_list import RadioList
 from .table_view import TableView
+from .nested_menu import NestedMenu, Leaf
 
 __all__ = [
     "MenuFunction",
@@ -22,4 +23,6 @@ __all__ = [
     "TreeView",
     "RadioList",
     "TableView",
+    "NestedMenu",
+    "Leaf",
 ]
