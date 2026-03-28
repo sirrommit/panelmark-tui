@@ -59,6 +59,9 @@ from panelmark_tui.widgets import (
 
 ## Confirm
 
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 Asks the user to confirm or deny an action. A message area and caller-defined buttons.
 
 ```python
@@ -93,6 +96,9 @@ if result == "delete":
 
 ## Alert
 
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 Informational or warning popup with a single OK button. Blocks until dismissed.
 
 ```python
@@ -118,6 +124,9 @@ Alert(
 ---
 
 ## InputPrompt
+
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 Asks the user to type a single line of text.
 
@@ -155,6 +164,9 @@ Cancel/Escape/Ctrl+Q.
 ---
 
 ## ListSelect
+
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 Lets the user pick one item (single mode) or multiple items (multi mode) from a scrollable
 list.
@@ -218,6 +230,9 @@ Pass a `list` to start with all unchecked; pass a `dict[str, bool]` to set initi
 
 ## FilePicker
 
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 Browse the filesystem and select a file or directory.
 
 ```python
@@ -265,6 +280,9 @@ dest = FilePicker(
 
 ## DatePicker
 
+> **Frequently implemented:** This widget follows the `panelmark` portable standard
+> library's recommended API for this type.
+
 Presents a monthly calendar for date selection.
 
 ```python
@@ -306,6 +324,9 @@ if due_date:
 ---
 
 ## DataclassForm
+
+> **Portable:** This widget is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 Modal form widget driven by a dataclass instance. Presents the dataclass's fields as
 editable form rows with optional action buttons. A thin modal wrapper around
@@ -357,6 +378,9 @@ that triggered exit.  Each action's return value becomes the shell exit value.
 
 ## Progress
 
+> **Frequently implemented:** This widget follows the `panelmark` portable standard
+> library's recommended API for this type.
+
 Displays a progress bar during a long operation. Driven programmatically from the
 caller's loop.
 
@@ -401,6 +425,9 @@ with Progress(title="Importing data", total=len(records)).show(sh) as prog:
 
 ## Toast
 
+> **Frequently implemented:** This widget follows the `panelmark` portable standard
+> library's recommended API for this type.
+
 Transient overlay notification that auto-dismisses after a configurable timeout
 or on any keypress.  Useful when there is no `$status$` region in the current
 shell.
@@ -435,6 +462,9 @@ def handle_save(sh):
 ---
 
 ## Spinner
+
+> **Frequently implemented:** This widget follows the `panelmark` portable standard
+> library's recommended API for this type.
 
 Indeterminate-progress popup for operations with no known total.  Like
 `Progress` but shows an animated spinner instead of a fill bar.

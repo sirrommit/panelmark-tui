@@ -80,6 +80,9 @@ Examples: the list of strings in `ListView`; the rows and columns in
 
 ## MenuReturn
 
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 A scrollable menu that immediately returns a value when the user selects an item.
 
 ```python
@@ -111,6 +114,9 @@ list to convert via `{item: item for item in items}`).
 ---
 
 ## MenuFunction
+
+> **Frequently implemented:** This interaction follows the `panelmark` portable
+> standard library's recommended API for this type.
 
 A scrollable menu that calls a Python function when the user selects an item. Does not
 exit the shell automatically — the callback decides what happens next.
@@ -149,6 +155,9 @@ callback was last triggered without changing the menu's current state.
 ---
 
 ## TextBox
+
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 A multi-line (or single-line) text input with cursor navigation and optional word wrap.
 
@@ -200,6 +209,9 @@ press.  Always returns `(False, None)` in `"newline"` and `"ignore"` modes.
 
 ## ListView
 
+> **Frequently implemented:** This interaction follows the `panelmark` portable
+> standard library's recommended API for this type.
+
 A display-only scrollable list. Not focusable — used to show read-only content that the
 user cannot interact with directly. Updated programmatically via `shell.update()`.
 
@@ -223,6 +235,9 @@ sh.update("log", current + ["New log entry"])
 ---
 
 ## TreeView
+
+> **Frequently implemented:** This interaction follows the `panelmark` portable
+> standard library's recommended API for this type.
 
 An interactive, keyboard-navigable tree with expand/collapse support.
 
@@ -276,6 +291,9 @@ Branch toggles do not exit the shell.
 ---
 
 ## CheckBox
+
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 A scrollable checkbox list. Supports **multi-select** (the default) and **single-select**
 modes.
@@ -334,6 +352,9 @@ full page; `Home`/`End` to jump to the first/last item; `Space` or `Enter` to to
 
 ## RadioList
 
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 A single-select list with radio-button visuals (`(●)` / `( )`).  The cursor
 position *is* the selection — moving the cursor immediately changes which item
 shows `(●)`.  Pressing `Enter` or `Space` accepts the current selection and
@@ -373,6 +394,9 @@ pressed.
 ---
 
 ## TableView
+
+> **Frequently implemented:** This interaction follows the `panelmark` portable standard
+> library's recommended API for this type.
 
 A multi-column read-only display table.  Renders a sticky header row followed
 by scrollable data rows.  Active row is highlighted when focused.
@@ -468,6 +492,9 @@ last resort, not a default choice.
 
 ## FormInput
 
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
 A structured data-entry form with multiple typed fields, validation, and a Submit button.
 
 ```python
@@ -531,7 +558,81 @@ Submit (or on a `bool`/`choices` field) to activate; `Tab`/`Shift+Tab` for focus
 
 ---
 
+## DataclassFormInteraction
+
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
+
+A structured form interaction driven by a Python dataclass instance.  Field types and
+labels are derived from the dataclass's field annotations and names.  Use this when you
+need a form embedded in a larger shell alongside other regions.  For a standalone popup,
+use [`DataclassForm`](widgets.md#dataclassform) instead.
+
+```python
+DataclassFormInteraction(
+    dataclass_instance,
+    actions: list | None = None,
+    on_change: callable | None = None,
+)
+```
+
+`dataclass_instance` must be an instance of a `@dataclasses.dataclass` class (not the
+class itself).  The interaction introspects the instance's fields at construction time.
+
+**`actions`** is an optional list of action dicts.  Each dict has three keys:
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `"label"` | `str` | Button label displayed at the bottom of the form |
+| `"shortcut"` | `str` | Single-character keyboard shortcut to activate the action |
+| `"action"` | `callable` | Called with the current field-value dict; its return value becomes the shell exit value |
+
+**`on_change`** is an optional `callable(field_name: str, values: dict)` called whenever
+a field value changes.
+
+```python
+import dataclasses
+from panelmark_tui.interactions import DataclassFormInteraction
+
+@dataclasses.dataclass
+class Config:
+    host:  str  = "localhost"
+    port:  int  = 8080
+    debug: bool = False
+
+interaction = DataclassFormInteraction(
+    Config(),
+    actions=[
+        {"label": "Save",   "shortcut": "s", "action": lambda vals: vals},
+        {"label": "Cancel", "shortcut": "q", "action": lambda vals: None},
+    ],
+    on_change=lambda name, vals: print(f"{name} changed"),
+)
+sh.assign("config", interaction)
+result = sh.run()   # dict of field values, or None on cancel
+```
+
+**`get_value()`:** returns the current field-state dict.  Fields still at their
+dataclass default return the original default value; fields the user has typed into
+return the typed text as a string.
+
+**`set_value(mapping)`:** restores field state from a dict.  Fields whose value matches
+the dataclass default are restored to default mode; other fields are shown as typed text.
+
+**`signal_return()`:** returns `(True, action_result)` when an action's callable fires
+and returns a non-`None` value (or explicitly returns `None` to signal cancellation);
+`(False, None)` otherwise.
+
+**Keys:** `↑`/`↓` or `j`/`k` to move between fields; field-specific keys for editing;
+`Enter` on the last field advances to the action buttons; shortcut keys activate actions
+directly.
+
+---
+
 ## StatusMessage
+
+> **Portable:** This interaction is part of the `panelmark` portable standard library.
+> See `docs/renderer-spec/portable-library.md` in the core repo.
 
 A display-only single-line status / validation feedback area. Not focusable.
 

@@ -11,9 +11,10 @@ For the normative specification, see the renderer-spec docs in the `panelmark` c
 - [portable-library.md](../panelmark/docs/renderer-spec/portable-library.md) — optional portable widget layer
 - [readiness.md](../panelmark/docs/renderer-spec/readiness.md) — readiness checklist
 
-`panelmark-tui` claims **`core-compatible`** status.  It does not currently claim
-`portable-library-compatible` — its widget set covers similar ground but has not been
-formally aligned against the portable standard library contract.
+`panelmark-tui` claims **`portable-library-compatible`** status.  It implements all
+required interactions and widgets defined in the portable standard library.  It also
+provides the frequently-implemented interactions and widgets listed in that spec.  All
+renderer-specific additions beyond the portable contract are documented as such.
 
 
 ## Module Layout
