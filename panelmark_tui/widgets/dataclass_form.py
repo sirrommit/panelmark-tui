@@ -13,9 +13,9 @@ Usage
         age:   int = field(default=0,   metadata={"label": "Age"})
 
     def collect(sh):
-        def _save(shell, values):
+        def _save(values):
             return values   # non-None → form closes
-        def _cancel(shell, values):
+        def _cancel(values):
             return False    # non-None → form closes
 
         result = DataclassForm(
@@ -70,8 +70,10 @@ class DataclassForm(_ModalWidget):
     actions : list[dict] | None
         Passed directly to ``DataclassFormInteraction``.  Each dict may
         contain ``"shortcut"``, ``"show_button"``, ``"label"``,
-        ``"action"`` (called as ``action(shell, values)``; return
-        non-``None`` to close the form).
+        ``"action"`` (called as ``action(values)`` — portable baseline;
+        return non-``None`` to close the form).  The two-argument form
+        ``action(shell, values)`` is accepted as a TUI compatibility
+        extension.
     on_change : callable | None
         Passed to ``DataclassFormInteraction``.  Called as
         ``on_change(field_name, values)`` when focus leaves a field.

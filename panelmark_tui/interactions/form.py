@@ -1,4 +1,5 @@
 import dataclasses
+import inspect
 import typing
 
 from panelmark.interactions.base import Interaction
@@ -334,7 +335,12 @@ class FormInput(Interaction):
         return True, result
 
     def get_value(self) -> dict:
-        """Return current state as a dict."""
+        """Return current field-state dict with values coerced to declared types.
+
+        ``int`` and ``float`` fields return the coerced value, or ``None`` if the
+        buffer is empty or contains an incomplete/invalid value (e.g. ``"-"`` or
+        ``"12."``).  ``str``, ``bool``, and ``choices`` fields are always valid.
+        """
         result = {}
         for key in self._field_keys:
             defn = self._fields[key]
@@ -346,6 +352,16 @@ class FormInput(Interaction):
                 result[key] = options[state] if 0 <= state < len(options) else None
             elif ftype == 'bool':
                 result[key] = state
+            elif ftype == 'int':
+                try:
+                    result[key] = int(state) if state else None
+                except (ValueError, TypeError):
+                    result[key] = None
+            elif ftype == 'float':
+                try:
+                    result[key] = float(state) if state else None
+                except (ValueError, TypeError):
+                    result[key] = None
             else:
                 result[key] = state
         return result
@@ -503,8 +519,11 @@ class DataclassFormInteraction(Interaction):
         - ``"shortcut"`` : str | None
         - ``"show_button"`` : bool — render as a button in the button row
         - ``"label"`` : str
-        - ``"action"`` : callable ``(shell, values) -> result``
-          Return non-``None`` to signal shell exit with that result.
+        - ``"action"`` : callable ``(values) -> result`` — **portable baseline**
+          Receives the current field-value dict; return non-``None`` to signal
+          shell exit with that result.
+          **TUI extension:** ``(shell, values) -> result`` (two-argument form) is
+          also accepted for backward compatibility.
     on_change : callable | None
         Called as ``on_change(field_name, values)`` when focus leaves a field.
     """
@@ -729,7 +748,16 @@ class DataclassFormInteraction(Interaction):
         if action is None:
             return False, self.get_value()
         values = self.get_value()
-        result = action(self._shell, values)
+        # Portable contract: action(values).
+        # TUI compatibility extension: action(shell, values) — two-argument form.
+        try:
+            nparams = len(inspect.signature(action).parameters)
+        except (ValueError, TypeError):
+            nparams = 2
+        if nparams == 1:
+            result = action(values)
+        else:
+            result = action(self._shell, values)
         if result is not None:
             self._wants_exit = True
             self._exit_value = result

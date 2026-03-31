@@ -407,6 +407,50 @@ class TestActions:
         inter.handle_key("KEY_F1")
         assert received[0]["name"] == "B"
 
+    # --- portable one-argument action contract ---
+
+    def test_portable_one_arg_action_called_with_values(self):
+        received = []
+        actions = [
+            {"shortcut": "KEY_F2", "show_button": False,
+             "label": "Save", "action": lambda vals: received.append(vals) or None},
+        ]
+        inter = make_interaction(Simple(), actions=actions)
+        inter.handle_key("KEY_F2")
+        assert len(received) == 1
+        assert "name" in received[0]
+
+    def test_portable_one_arg_action_returning_value_triggers_exit(self):
+        actions = [
+            {"shortcut": "KEY_F3", "show_button": False,
+             "label": "Save", "action": lambda vals: vals},
+        ]
+        inter = make_interaction(Simple(), actions=actions)
+        inter.handle_key("KEY_F3")
+        assert inter._wants_exit is True
+
+    def test_portable_one_arg_signal_return_contains_action_result(self):
+        actions = [
+            {"shortcut": "KEY_F4", "show_button": False,
+             "label": "Save", "action": lambda vals: {"result": "ok"}},
+        ]
+        inter = make_interaction(Simple(), actions=actions)
+        inter.handle_key("KEY_F4")
+        fired, result = inter.signal_return()
+        assert fired is True
+        assert result == {"result": "ok"}
+
+    def test_legacy_two_arg_action_still_works(self):
+        # Two-argument TUI compatibility extension must continue to work.
+        called = []
+        actions = [
+            {"shortcut": "KEY_F5", "show_button": False,
+             "label": "Go", "action": lambda s, v: called.append(v) or None},
+        ]
+        inter = make_interaction(Simple(), actions=actions)
+        inter.handle_key("KEY_F5")
+        assert len(called) == 1
+
 
 # ---------------------------------------------------------------------------
 # _DataclassFormInteraction — rendering

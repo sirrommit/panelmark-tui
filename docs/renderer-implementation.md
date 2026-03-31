@@ -117,35 +117,49 @@ The following are `panelmark-tui`-specific and are not part of the portable core
 
 ### Built-in interactions
 
-All interaction types in `panelmark_tui.interactions` are renderer-specific additions:
+The following interactions satisfy the **portable standard library** semantic contract
+defined in `panelmark/docs/renderer-spec/portable-library.md`.  They are TUI-specific
+class implementations, but their `get_value()` / `set_value()` / `signal_return()`
+semantics are portable across renderers that implement the same spec:
 
-- `MenuFunction`, `MenuReturn` — scrollable menus with callback or return-value semantics
-- `TextBox` — multi-line text editor with word-wrap and submit-mode options
-- `ListView` — display-only scrollable list
-- `CheckBox` — checkbox list (multi and single-select modes)
+- `MenuReturn` — single-select scrollable list that returns a mapped value
+- `NestedMenu` — hierarchical action menu with `Leaf` sentinel
 - `RadioList` — single-select list with radio-button visuals
-- `TreeView` — interactive collapsible tree
-- `TableView` — multi-column display table with sticky header
+- `CheckBox` — checkbox list (multi and single-select modes)
+- `TextBox` — multi-line text editor with word-wrap and submit-mode options
 - `FormInput` — structured data-entry form with typed fields and validation
 - `DataclassFormInteraction` — dataclass-introspecting form interaction
 - `StatusMessage` — display-only inline status/feedback region
+
+The following interactions are TUI-specific additions with no portable equivalent:
+
+- `MenuFunction` — scrollable menu that invokes callbacks without exiting the shell
+- `ListView` — display-only scrollable list
+- `TreeView` — interactive collapsible tree
+- `TableView` — multi-column display table with sticky header
 - `Function` — escape-hatch for fully custom rendering and key handling
 
-These implement the `panelmark.Interaction` ABC and can be used in any shell, but they
-are implemented against the blessed TUI surface and are not portable to other renderers.
+All interactions implement the `panelmark.Interaction` ABC and are implemented against
+the blessed TUI surface.
 
 
 ### Built-in widgets
 
-All widgets in `panelmark_tui.widgets` are renderer-specific:
+The following widgets satisfy the **portable standard library** semantic contract:
 
-- `Confirm`, `Alert`, `InputPrompt`, `ListSelect` — standard modal dialogs
-- `FilePicker`, `DatePicker`, `DataclassForm` — shell-composed picker/form widgets
+- `Alert`, `Confirm`, `InputPrompt`, `ListSelect`, `FilePicker`, `DataclassForm` — required
+  portable modal widgets
+
+The following widgets are TUI-specific additions with no portable equivalent:
+
+- `DatePicker` — calendar date selection
 - `Progress`, `Toast`, `Spinner` — renderer-managed utility overlays with their own
   render cycles
 
-These should not be assumed portable unless the `panelmark` core renderer spec explicitly
-standardizes them.
+What makes a widget or interaction portable is semantic contract compatibility, not
+renderer-neutral code.  A TUI-specific class implementation can still satisfy the portable
+contract if its constructor, `get_value()`, `set_value()`, and `signal_return()` semantics
+match the spec.
 
 
 ## Portability Boundaries
@@ -156,11 +170,14 @@ standardizes them.
 | Shell state machine, focus, dirty tracking | `panelmark` core | Yes |
 | Interaction ABC (`render`, `handle_key`, `get_value`, `set_value`, `signal_return`) | `panelmark` core | Yes |
 | Draw command types (`WriteCmd`, `FillCmd`, `CursorCmd`, `RenderContext`) | `panelmark` core | Yes |
-| Built-in interaction implementations | `panelmark-tui` | No — TUI-specific |
-| Built-in widget implementations | `panelmark-tui` | No — TUI-specific |
+| Required portable interaction implementations | `panelmark-tui` | Yes — semantic contract matches portable spec |
+| TUI-specific interaction implementations | `panelmark-tui` | No — TUI-specific |
+| Required portable widget implementations | `panelmark-tui` | Yes — semantic contract matches portable spec |
+| TUI-specific widget implementations | `panelmark-tui` | No — TUI-specific |
 | Blessed terminal integration | `panelmark-tui` | No |
 | `MockTerminal`, test utilities | `panelmark-tui` | No |
 
-Application code that stays within the core shell language and the `Interaction` ABC is
-portable.  Application code that directly imports `panelmark_tui.interactions` or
-`panelmark_tui.widgets` is coupled to the TUI renderer.
+Application code that uses only the portable standard library API (interactions and widgets
+listed as portable above) is portable across any renderer that claims
+`portable-library-compatible` status.  Application code that uses TUI-specific interactions
+or widgets is coupled to the TUI renderer.

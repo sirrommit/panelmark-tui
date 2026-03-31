@@ -621,12 +621,45 @@ class TestFormInput:
         form = FormInput({'age': {'type': 'int', 'descriptor': 'Age'}})
         form.handle_key('2')
         form.handle_key('5')
-        assert form.get_value()['age'] == '25'
+        assert form.get_value()['age'] == 25
 
     def test_type_int_rejects_letters(self):
         form = FormInput({'age': {'type': 'int', 'descriptor': 'Age'}})
         form.handle_key('a')
-        assert form.get_value()['age'] == ''
+        assert form.get_value()['age'] is None
+
+    def test_get_value_int_empty_returns_none(self):
+        form = FormInput({'age': {'type': 'int', 'descriptor': 'Age'}})
+        assert form.get_value()['age'] is None
+
+    def test_get_value_float_valid_returns_float(self):
+        form = FormInput({'ratio': {'type': 'float', 'descriptor': 'Ratio'}})
+        form.handle_key('3')
+        form.handle_key('.')
+        form.handle_key('1')
+        form.handle_key('4')
+        assert form.get_value()['ratio'] == 3.14
+
+    def test_get_value_float_empty_returns_none(self):
+        form = FormInput({'ratio': {'type': 'float', 'descriptor': 'Ratio'}})
+        assert form.get_value()['ratio'] is None
+
+    def test_get_value_float_incomplete_returns_none(self):
+        # "12." is a valid Python float string but _coerce would succeed; "-" alone is invalid
+        form = FormInput({'ratio': {'type': 'float', 'descriptor': 'Ratio'}})
+        form.handle_key('-')
+        assert form.get_value()['ratio'] is None
+
+    def test_get_value_int_returns_int_type(self):
+        form = FormInput({'n': {'type': 'int', 'descriptor': 'N', 'default': '7'}})
+        # default is stored as string '7', get_value must coerce to int
+        assert form.get_value()['n'] == 7
+        assert isinstance(form.get_value()['n'], int)
+
+    def test_round_trip_set_get_int(self):
+        form = FormInput({'age': {'type': 'int', 'descriptor': 'Age'}})
+        form.set_value({'age': 42})
+        assert form.get_value()['age'] == 42
 
     def test_bool_toggle_with_space(self):
         form = FormInput({'flag': {'type': 'bool', 'descriptor': 'Flag', 'default': False}})
