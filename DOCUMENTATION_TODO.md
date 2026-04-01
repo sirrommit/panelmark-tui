@@ -176,9 +176,6 @@ documentation is updated:
   `ISSUES.md`, deleted `docs/*.md` files, and `DOCUMENTATION_TODO.md` changed.
   No Python source changes.
 
-- [ ] Commit:
-  ```
-  docs: fix interaction count (12→13), replace local docs/ with panelmark-docs links
-  ```
+- [x] Commit: `62e7f59 docs: fix interaction count (12→13), replace local docs/ with panelmark-docs links`
 
-- [ ] Push to `origin main`.
+- [x] Push to `origin main`. ✓
