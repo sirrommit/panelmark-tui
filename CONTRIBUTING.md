@@ -86,12 +86,11 @@ requires a real tty.
 
 ## Architecture overview
 
-See [`docs/renderer-implementation.md`](docs/renderer-implementation.md) for how
+See [Renderer Implementation](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/renderer-implementation.md) for how
 `panelmark-tui` satisfies the `panelmark` renderer specification.
 
-For the normative renderer contract and compatibility levels, see the renderer-spec docs
-in the core repo starting at
-[`../panelmark/docs/renderer-spec/overview.md`](../panelmark/docs/renderer-spec/overview.md).
+For the normative renderer contract and compatibility levels, see the
+[Renderer Spec](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/overview.md).
 
 ---
 
@@ -106,7 +105,7 @@ component lives inside one shell region and handles its own rendering and key ev
 4. Implement `get_value()`, `set_value(value)`, and `signal_return()`.
 5. Set `is_focusable = True` if the interaction should receive keyboard focus.
 6. Export from `panelmark_tui/interactions/__init__.py`.
-7. Add tests in `tests/` and document in `docs/interactions.md`.
+7. Add tests in `tests/` and document in the [Interactions](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/interactions.md) page.
 
 See [`../panelmark/docs/custom-interactions.md`](../panelmark/docs/custom-interactions.md)
 for the full `Interaction` ABC contract and the interaction API semantics.
@@ -124,8 +123,8 @@ buttons, forms with multiple fields, picker UIs with two panes, etc.
 3. Set `self.width` in `__init__` so the base class can auto-centre the popup.
 4. `.show(parent_shell=...)` is provided by the base class and calls `run_modal()`.
 5. Export from `panelmark_tui/widgets/__init__.py`.
-6. Add tests using `MockTerminal` — see [`docs/testing.md`](docs/testing.md).
-7. Document in `docs/widgets.md`.
+6. Add tests using `MockTerminal` — see [Testing](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/limitations.md).
+7. Document in the [Widgets](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/widgets.md) page.
 
 See `panelmark_tui/widgets/alert.py` or `panelmark_tui/widgets/confirm.py` as minimal
 reference examples.
@@ -148,4 +147,4 @@ Guidelines:
 - Document explicitly that the widget manages its own render cycle.
 - Document return/cancellation semantics clearly.
 - Export from `panelmark_tui/widgets/__init__.py`.
-- Document in `docs/widgets.md` under the renderer-managed family.
+- Document in the [Widgets](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/widgets.md) page under the renderer-managed family.

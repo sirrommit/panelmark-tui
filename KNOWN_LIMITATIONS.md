@@ -1,5 +1,9 @@
 # Known Limitations
 
+> **Deprecated.** This file is superseded by the
+> [panelmark-docs limitations page](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/limitations.md).
+> It will be removed in a future release.
+
 Real current limitations and intentionally non-obvious behaviour in panelmark-tui.
 Items here are not bugs — they are the current reality that a contributor or user
 needs to know about because the behaviour is surprising or differs from a reasonable
@@ -26,7 +30,7 @@ Widget classes (`Confirm`, `Alert`, `FilePicker`, etc.) do not accept a `_termin
 constructor argument.  To inject a mock terminal for testing, set
 `parent_shell.terminal` before calling `widget.show(parent_shell=parent)`.
 
-See [docs/testing.md](docs/testing.md) for the correct pattern and examples.
+See [Testing](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/limitations.md) for the correct pattern and examples.
 
 ---
 

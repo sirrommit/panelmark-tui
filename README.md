@@ -4,6 +4,10 @@
 [panelmark](https://github.com/sirrommit/panelmark) shells. It turns a panelmark layout
 definition and a set of interaction assignments into a live, keyboard-driven TUI application.
 
+**Compatibility:** `portable-library-compatible` — implements all 8 required portable
+interactions and all 6 required portable widgets as defined in the
+[renderer spec](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/overview.md).
+
 ---
 
 ## What is real today
@@ -28,7 +32,7 @@ definition and a set of interaction assignments into a live, keyboard-driven TUI
 | Panel headings (`__text__` syntax) | ✅ Rendered as `├─── Heading ───┤` at top of panel content area |
 | Equal-width fill splits (all fill-width columns) | ✅ Columns share space equally (differ by at most 1 char) |
 
-See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
+See [Known Limitations](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/limitations.md) for the full list.
 
 ---
 
@@ -37,9 +41,32 @@ See [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md) for the full list.
 | Component | Description |
 |-----------|-------------|
 | `Shell` | Full terminal event loop (fullscreen and modal) |
-| 12 built-in interactions | `MenuFunction`, `MenuReturn`, `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `DataclassFormInteraction`, `StatusMessage`, `TreeView`, `RadioList`, `TableView` |
-| 10 built-in widgets | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`, `Toast`, `Spinner`, `DataclassForm` |
+| 13 built-in interactions (8 portable, 5 TUI-specific) | `MenuFunction`, `MenuReturn`, `TextBox`, `ListView`, `CheckBox`, `Function`, `FormInput`, `DataclassFormInteraction`, `StatusMessage`, `TreeView`, `RadioList`, `TableView`, `NestedMenu` |
+| 10 built-in widgets (6 portable, 4 TUI-specific) | `Confirm`, `Alert`, `InputPrompt`, `ListSelect`, `FilePicker`, `DatePicker`, `Progress`, `Toast`, `Spinner`, `DataclassForm` |
 | Testing utilities | `MockTerminal`, `make_key` for test suites that don't need a real terminal |
+
+Portable interactions and widgets follow the
+[portable library spec](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/portable-library.md).
+TUI-specific additions are documented in the links below.
+
+### TUI-specific interactions (beyond portable standard)
+
+| Interaction | Description |
+|-------------|-------------|
+| `MenuFunction` | Menu that calls a function on selection rather than returning |
+| `Function` | Generic function-backed interaction |
+| `ListView` | Scrollable read-only list |
+| `TreeView` | Interactive collapsible tree; expand/collapse; full keyboard navigation |
+| `TableView` | Multi-column display table; sticky header; scrollable |
+
+### TUI-specific widgets (beyond portable standard)
+
+| Widget | Description |
+|--------|-------------|
+| `DatePicker` | Date selection modal |
+| `Progress` | Context-manager progress bar; renderer-managed update cycle |
+| `Toast` | Transient overlay notification; auto-dismisses after timeout or keypress |
+| `Spinner` | Indeterminate-progress popup; animated braille frames; cancellable |
 
 ---
 
@@ -137,21 +164,17 @@ with Progress(title="Processing", total=len(items)).show(sh) as prog:
 
 | Document | Description |
 |----------|-------------|
-| [Getting Started](docs/getting-started.md) | Step-by-step guide: building your first TUI |
-| [Interactions](docs/interactions.md) | All 12 built-in interactions with examples |
-| [Widgets](docs/widgets.md) | All 10 built-in widgets with full API reference |
-| [Testing](docs/testing.md) | Testing interactions and shells without a real terminal |
-| [Renderer Implementation](docs/renderer-implementation.md) | How panelmark-tui satisfies the panelmark renderer spec |
+| [Getting Started](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/getting-started.md) | Step-by-step guide: building your first TUI with panelmark-tui |
+| [Interactions](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/interactions.md) | All 13 built-in interactions with API reference and examples |
+| [Widgets](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/widgets.md) | All 10 built-in widgets with full API reference |
+| [Testing](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/limitations.md) | Testing interactions with `MockTerminal` and `make_key`; known limitations |
+| [Renderer Implementation](https://github.com/sirrommit/panelmark-docs/blob/main/docs/panelmark-tui/renderer-implementation.md) | How panelmark-tui satisfies the renderer spec |
+| [Portable Library Spec](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/portable-library.md) | Normative spec for all 8 portable interactions and 6 portable widgets |
+| [Shell Language](https://github.com/sirrommit/panelmark-docs/blob/main/docs/shell-language/overview.md) | ASCII-art layout syntax reference |
+| [Draw Commands](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/contract.md) | `DrawCommand` types, `RenderContext`, style dict |
+| [Custom Interactions](https://github.com/sirrommit/panelmark-docs/blob/main/docs/shell-language/examples.md) | Implementing the `Interaction` ABC |
+| [Renderer Spec](https://github.com/sirrommit/panelmark-docs/blob/main/docs/renderer-spec/overview.md) | Renderer compatibility contract; portable library; extension policy |
 | [Contributing](CONTRIBUTING.md) | Test commands, PYTHONPATH setup, running examples, adding interactions/widgets |
-
-Also see the panelmark core docs for the layout language and custom interaction protocol:
-
-| Document | Description |
-|----------|-------------|
-| [Shell Language](../panelmark/docs/shell-language.md) | ASCII-art layout syntax reference |
-| [Draw Commands](../panelmark/docs/draw-commands.md) | `DrawCommand`, `RenderContext`, style dict |
-| [Custom Interactions](../panelmark/docs/custom-interactions.md) | Implementing the `Interaction` ABC |
-| [Renderer Specification](../panelmark/docs/renderer-spec/overview.md) | What `panelmark` owns vs what renderers own; compatibility levels |
 
 ---
 
