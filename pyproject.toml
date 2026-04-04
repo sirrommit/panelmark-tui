@@ -6,6 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "panelmark-tui"
 version = "0.1.0"
 description = "Terminal UI renderer for panelmark — blessed-powered TUI shell."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Timothy Morris PhD", email = "sirrommit@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = [
     "panelmark>=0.1.0",
@@ -22,6 +25,9 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+
+[project.urls]
+Repository = "https://github.com/sirrommit/panelmark-tui"
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov"]
