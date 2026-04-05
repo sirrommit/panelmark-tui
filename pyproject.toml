@@ -4,14 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "panelmark-tui"
-version = "0.1.0"
+version = "0.2.0"
 description = "Terminal UI renderer for panelmark — blessed-powered TUI shell."
 readme = "README.md"
 license = { file = "LICENSE" }
 authors = [{ name = "Timothy Morris PhD", email = "sirrommit@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = [
-    "panelmark>=0.1.0",
+    "panelmark>=0.2.0",
     "blessed>=1.20",
 ]
 keywords = ["ui", "layout", "tui", "terminal", "panelmark", "blessed"]

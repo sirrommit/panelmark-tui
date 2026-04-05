@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [0.2.0] — 2026-04-05
+
 ### Added
 
 - `NestedMenu` interaction with `Leaf` sentinel for hierarchical navigation.
@@ -83,5 +87,6 @@ Initial release.
 - `testing.py` module for interaction unit tests.
 - Shell event loop integration via `panelmark_tui.run()`.
 
-[Unreleased]: https://github.com/sirrommit/panelmark-tui/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/sirrommit/panelmark-tui/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/sirrommit/panelmark-tui/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/sirrommit/panelmark-tui/releases/tag/v0.1.0
